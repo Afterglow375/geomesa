@@ -31,10 +31,11 @@ import org.apache.hadoop.mapred._
 import org.geotools.data.{DataStoreFinder, Query}
 import org.geotools.filter.identity.FeatureIdImpl
 import org.geotools.filter.text.ecql.ECQL
-import org.locationtech.geomesa.core.data.{AccumuloDataStore, AccumuloDataStoreFactory}
-import org.locationtech.geomesa.core.index.{getTransformSchema, _}
-import org.locationtech.geomesa.feature.FeatureEncoding.FeatureEncoding
-import org.locationtech.geomesa.feature.{ScalaSimpleFeature, SimpleFeatureDecoder}
+import org.locationtech.geomesa.accumulo.data.{AccumuloDataStore, AccumuloDataStoreFactory}
+import org.locationtech.geomesa.accumulo.index.{getTransformSchema, _}
+import org.locationtech.geomesa.accumulo.stats.QueryStatTransform
+import org.locationtech.geomesa.features.SerializationType.SerializationType
+import org.locationtech.geomesa.features.{ScalaSimpleFeature, SerializationType, SimpleFeatureDeserializer, SimpleFeatureDeserializers}
 import org.locationtech.geomesa.jobs.GeoMesaConfigurator
 import org.opengis.feature.simple.{SimpleFeature, SimpleFeatureType}
 import org.opengis.filter.Filter
@@ -99,15 +100,21 @@ object GeoMesaInputFormat extends Logging {
       val hints = ds.strategyHints(sft)
       val version = ds.getGeomesaVersion(sft)
       val queryPlanner = new QueryPlanner(sft, featureEncoding, indexSchema, ds, hints, version)
-      new STIdxStrategy().getQueryPlan(query, queryPlanner, ExplainNull)
+      val qps = new STIdxStrategy().getQueryPlans(query, queryPlanner, ExplainNull)
+      if (qps.length > 1) {
+        logger.error("The query being executed requires multiple scans, which is not currently " +
+            "supported by geomesa. Your result set will be partially incomplete. This is most likely due " +
+            s"to an OR clause in your query. Query: ${QueryStatTransform.filterToString(query.getFilter)}")
+      }
+      qps.head
     }
 
     // use the explain results to set the accumulo input format options
     InputFormatBase.setInputTableName(job, queryPlan.table)
-    if (!queryPlan.ranges.isEmpty) {
+    if (queryPlan.ranges.nonEmpty) {
       InputFormatBase.setRanges(job, queryPlan.ranges)
     }
-    if (!queryPlan.columnFamilies.isEmpty) {
+    if (queryPlan.columnFamilies.nonEmpty) {
       InputFormatBase.fetchColumns(job, queryPlan.columnFamilies.map(cf => new AccPair[Text, Text](cf, null)))
     }
     queryPlan.iterators.foreach(InputFormatBase.addIterator(job, _))
@@ -130,13 +137,14 @@ object GeoMesaInputFormat extends Logging {
 /**
  * Input format that allows processing of simple features from GeoMesa based on a CQL query
  */
-class GeoMesaInputFormat extends InputFormat[Text, SimpleFeature] {
+class GeoMesaInputFormat extends InputFormat[Text, SimpleFeature] with Logging {
 
   val delegate = new AccumuloInputFormat
 
   var sft: SimpleFeatureType = null
-  var encoding: FeatureEncoding = null
+  var encoding: SerializationType = null
   var numShards: Int = -1
+  var desiredSplitCount: Int = -1
 
   private def init(conf: Configuration) = if (sft == null) {
     val params = GeoMesaConfigurator.getDataStoreInParams(conf)
@@ -144,6 +152,7 @@ class GeoMesaInputFormat extends InputFormat[Text, SimpleFeature] {
     sft = ds.getSchema(GeoMesaConfigurator.getFeatureType(conf))
     encoding = ds.getFeatureEncoding(sft)
     numShards = IndexSchema.maxShard(ds.getIndexSchemaFmt(sft.getTypeName))
+    desiredSplitCount = GeoMesaConfigurator.getDesiredSplits(conf)
   }
 
   /**
@@ -159,11 +168,15 @@ class GeoMesaInputFormat extends InputFormat[Text, SimpleFeature] {
   override def getSplits(job: JobConf, numSplits: Int) = {
     init(job)
     val accumuloSplits = delegate.getSplits(job, numSplits)
-    // try to create 2 mappers per node - account for case where there are less splits than shards
-    val groupSize = Math.max(numShards * 2, accumuloSplits.length / (numShards * 2))
+    // fallback on creating 2 mappers per node if desiredSplits is unset.
+    // Account for case where there are less splits than shards
+    val groupSize =  if (desiredSplitCount > 0) {
+      Math.max(1, accumuloSplits.length / desiredSplitCount)
+    } else {
+      Math.max(numShards * 2, accumuloSplits.length / (numShards * 2))
+    }
 
-    // We know each range will only have a single location because of autoAdjustRanges
-    val splits = accumuloSplits.groupBy(_.getLocations()(0)).flatMap { case (location, splits) =>
+    val splitsSet = accumuloSplits.groupBy(_.getLocations()(0)).flatMap { case (location, splits) =>
       splits.grouped(groupSize).map { group =>
         val split = new GroupedSplit()
         split.location = location
@@ -171,7 +184,10 @@ class GeoMesaInputFormat extends InputFormat[Text, SimpleFeature] {
         split
       }
     }
-    splits.toArray
+
+    logger.debug(s"Got ${splitsSet.toList.length} splits" +
+      s" using desired=$desiredSplitCount from ${accumuloSplits.length}")
+    splitsSet.toArray
   }
 
   override def getRecordReader(split: InputSplit, job: JobConf, reporter: Reporter) = {
@@ -181,7 +197,7 @@ class GeoMesaInputFormat extends InputFormat[Text, SimpleFeature] {
     // otherwise this kills memory
     val readers = splits.iterator.map(delegate.getRecordReader(_, job, reporter))
     val schema = GeoMesaConfigurator.getTransformSchema(job).getOrElse(sft)
-    val decoder = SimpleFeatureDecoder(schema, encoding)
+    val decoder = SimpleFeatureDeserializers(schema, encoding)
     new GeoMesaRecordReader(schema, decoder, readers, splits.length)
   }
 }
@@ -191,7 +207,7 @@ class GeoMesaInputFormat extends InputFormat[Text, SimpleFeature] {
  * simple features.
  */
 class GeoMesaRecordReader(sft: SimpleFeatureType,
-                          decoder: SimpleFeatureDecoder,
+                          decoder: SimpleFeatureDeserializer,
                           readers: Iterator[RecordReader[Key, Value]],
                           numReaders: Int) extends RecordReader[Text, SimpleFeature] {
 
@@ -233,7 +249,7 @@ class GeoMesaRecordReader(sft: SimpleFeatureType,
 
   override def next(key: Text, value: SimpleFeature) =
     if (nextInternal()) {
-      val sf = decoder.decode(delegateValue.get())
+      val sf = decoder.deserialize(delegateValue.get())
       // copy the decoded sf into the reused one passed in to this method
       key.set(sf.getID)
       value.getIdentifier.asInstanceOf[FeatureIdImpl].setID(sf.getID) // value will be a ScalaSimpleFeature

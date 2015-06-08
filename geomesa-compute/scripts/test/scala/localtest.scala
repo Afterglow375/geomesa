@@ -25,7 +25,7 @@ import org.apache.spark.{SparkConf, SparkContext}
 import org.geotools.data.{DataStoreFinder, Query}
 import org.geotools.factory.CommonFactoryFinder
 import org.locationtech.geomesa.compute.spark.GeoMesaSpark
-import org.locationtech.geomesa.core.data._
+import org.locationtech.geomesa.accumulo.data._
 import org.opengis.filter.Filter
 
 import scala.collection.JavaConversions._
@@ -51,7 +51,7 @@ val sconf = GeoMesaSpark.init(new SparkConf(true).setAppName("localtest").setMas
 val sc = new SparkContext(sconf)
 
 // Create an RDD from a query
-val queryRDD = org.locationtech.geomesa.compute.spark.GeoMesaSpark.rdd(conf, sc, ds, q)
+val queryRDD = org.locationtech.geomesa.compute.spark.GeoMesaSpark.rdd(conf, sc, params, q)
 
 // Convert RDD[SimpleFeature] to RDD[(String, SimpleFeature)] where the first
 // element of the tuple is the date to the day resolution
