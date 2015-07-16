@@ -166,17 +166,13 @@ class LiveFeatureCache(override val sft: SimpleFeatureType,
     }
   }
 
-  def cleanUp(): Unit = {
-    cache.cleanUp()
-  }
-
   override def within(w: Within): FR = {
-    cleanUp()
+    cache.cleanUp()
     super.within(w)
   }
 
   override def bbox(b: BBOX): FR = {
-    cleanUp()
+    cache.cleanUp()
     super.bbox(b)
   }
 
