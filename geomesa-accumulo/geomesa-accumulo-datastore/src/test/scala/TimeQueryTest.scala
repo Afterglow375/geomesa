@@ -63,7 +63,7 @@ class TimeQueryTest extends Specification with TestWithDataStore {
     } yield { s"$f $p $v" }
 
   val baseFilters: Seq[Filter] = temporalFilterStrings.map(ECQL.toFilter)
-  val andFilters = baseFilters.combinations(2).map(ff.and(_))
+  val andFilters: Seq[Filter] = baseFilters.combinations(2).map(ff.and(_)).toSeq
 
   val fc: SimpleFeatureCollection = new ListFeatureCollection(sft, features)
   addFeatures(features)
