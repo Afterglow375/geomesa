@@ -81,10 +81,10 @@ class TimeQueryTest extends Specification with TestWithDataStore {
   }
 
   def checkFilter(filter: Filter) = {
-    println(s"Filter is ${ECQL.toCQL(filter)}")
-
     val gmCount = fs.getFeatures(filter).size
     val fcCount = fc.subCollection(filter).size()
+
+    println(s"Filter is ${ECQL.toCQL(filter)}, count from geomesa is $gmCount, count from feature collection is $fcCount")
 
     gmCount mustEqual fcCount
   }
