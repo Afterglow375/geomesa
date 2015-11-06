@@ -9,13 +9,11 @@
 import org.geotools.data.collection.ListFeatureCollection
 import org.geotools.data.simple.SimpleFeatureCollection
 import org.geotools.factory.CommonFactoryFinder
-import org.geotools.feature.FeatureCollection
 import org.geotools.filter.text.ecql.ECQL
 import org.junit.runner.RunWith
 import org.locationtech.geomesa.accumulo.TestWithDataStore
 import org.locationtech.geomesa.features.ScalaSimpleFeatureFactory
 import org.locationtech.geomesa.utils.text.WKTUtils
-import org.opengis.feature.simple.SimpleFeature
 import org.opengis.filter.Filter
 import org.specs2.mutable.Specification
 import org.specs2.runner.JUnitRunner
@@ -27,7 +25,7 @@ class TimeQueryTest extends Specification with TestWithDataStore {
 
   sequential
 
-  override val spec = "id:String,startTime:Date,endTime:Date,*geom:Geometry:srid=4326"
+  override val spec = "id:String,startTime:Date:index=join,endTime:Date,*geom:Geometry:srid=4326"
   override def dtgField: String = "startTime"
 
   val geom = WKTUtils.read("POINT(45.0 49.0)")
