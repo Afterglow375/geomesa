@@ -6,6 +6,7 @@
   * http://www.opensource.org/licenses/apache2.0.php.
   *************************************************************************/
 
+import org.geotools.data.Query
 import org.geotools.data.collection.ListFeatureCollection
 import org.geotools.data.simple.SimpleFeatureCollection
 import org.geotools.factory.CommonFactoryFinder
@@ -27,7 +28,7 @@ class TimeQueryTest extends Specification with TestWithDataStore {
 
   sequential
 
-  override val spec = "id:String,startTime:Date,endTime:Date,*geom:Geometry:srid=4326"
+  override val spec = "id:String,startTime:Date,endTime:Date:index=join,*geom:Geometry:srid=4326"
   override def dtgField: String = "startTime"
 
   val startDate = "2014-01-12T12:00:00.000Z"
@@ -64,8 +65,8 @@ class TimeQueryTest extends Specification with TestWithDataStore {
   val bboxQuery = CQL.toFilter("bbox(geom, 30, 30, 70, 70)")
 
   val baseFilters: Seq[Filter] = temporalFilterStrings.map(ECQL.toFilter)
-  val andFilters: Seq[Filter] = baseFilters.combinations(2).map(ff.and(_)).toSeq
-  val geoFilters: Seq[Filter] = andFilters.map(ff.and(_, bboxQuery))
+  val andFilters: Seq[Filter] = baseFilters.combinations(2).map(ff.or(_)).toSeq
+  val geoFilters: Seq[Filter] = andFilters.map(ff.or(_, bboxQuery))
 
   val fc: SimpleFeatureCollection = new ListFeatureCollection(sft, features)
   addFeatures(features)
@@ -91,11 +92,14 @@ class TimeQueryTest extends Specification with TestWithDataStore {
     val gmCount = fs.getFeatures(filter).size
     val fcCount = fc.subCollection(filter).size()
 
+    println(explain(new Query(sftName, filter)))
+
     println(s"Filter is ${ECQL.toCQL(filter)}, count from geomesa is $gmCount, count from feature collection is $fcCount")
     if (gmCount != fcCount) {
       val features = SelfClosingIterator(fs.getFeatures(filter).features()).toList
     }
 
     gmCount mustEqual fcCount
+    success
   }
 }

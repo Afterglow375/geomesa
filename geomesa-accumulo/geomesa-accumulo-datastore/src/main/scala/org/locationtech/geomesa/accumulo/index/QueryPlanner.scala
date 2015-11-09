@@ -111,7 +111,8 @@ case class QueryPlanner(sft: SimpleFeatureType,
    * Set up the query plans and strategies used to execute them.
    * Returns the strategy plans and the number of distinct OR clauses, needed for determining deduplication
    */
-  private def getQueryPlans(query: Query,
+  private def
+  getQueryPlans(query: Query,
                             requested: Option[StrategyType],
                             output: ExplainerOutputType): Iterator[QueryPlan] = {
 
