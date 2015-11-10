@@ -8,6 +8,7 @@ package org.locationtech.geomesa.accumulo
   * http://www.opensource.org/licenses/apache2.0.php.
   *************************************************************************/
 
+import org.geotools.data.Query
 import org.geotools.filter.text.cql2.CQL
 import org.junit.runner.RunWith
 import org.locationtech.geomesa.features.ScalaSimpleFeatureFactory
@@ -18,7 +19,7 @@ import org.specs2.runner.JUnitRunner
 @RunWith(classOf[JUnitRunner])
 class IndexedAndedAttributesTest extends Specification with TestWithDataStore {
 
-  override val spec = "id:Integer:index=join,dtg:Date,*geom:Geometry:srid=4326"
+  override val spec = "id:Integer:index=join,dtg:Date:index=join,*geom:Geometry:srid=4326"
   val geom = WKTUtils.read("POINT(25.0 25.0)")
   val date = "2014-01-10T12:00:00.000Z"
 
@@ -40,11 +41,14 @@ class IndexedAndedAttributesTest extends Specification with TestWithDataStore {
 
   "ANDed queries against an indexed attribute" should {
     "return the correct number of results" in {
-      val filter = CQL.toFilter("id > 1 AND id > 5")
-      fs.getFeatures(filter).size mustEqual 1
+      val filter = CQL.toFilter("id < 3 AND id > 5 AND id > 10 AND dtg DURING 2014-01-01T11:45:00.000Z/2014-01-10T12:00:00.000Z")
+      println(explain(new Query(sftName, filter)))
+      fs.getFeatures(filter).size mustEqual 3
 
-      val filter2 = CQL.toFilter("id < 3 AND id > 5")
-      fs.getFeatures(filter2).size mustEqual 0
+//      val filter2 = CQL.toFilter("id < 3 AND id > 5")
+//      println(explain(new Query(sftName, filter2)))
+//      fs.getFeatures(filter2).size mustEqual 0
+//      success
     }
   }
 }
