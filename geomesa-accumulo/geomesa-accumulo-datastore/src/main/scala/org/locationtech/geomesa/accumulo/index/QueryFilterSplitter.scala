@@ -118,7 +118,7 @@ class QueryFilterSplitter(sft: SimpleFeatureType) extends Logging {
       val allAttributes = attribute ++ dateAttribute
       val attributes = allAttributes.groupBy(getAttributeProperty(_).get.name)
       attributes.foreach { case (name, thisAttribute) =>
-        val primary = thisAttribute.dropRight(thisAttribute.size-1)
+        val primary = Seq(thisAttribute.head)
         val nonPrimary = allAttributes.filterNot(primary.contains) ++
             temporal.filterNot(primary.contains) ++ spatial ++ others
         val secondary = andOption(nonPrimary)
