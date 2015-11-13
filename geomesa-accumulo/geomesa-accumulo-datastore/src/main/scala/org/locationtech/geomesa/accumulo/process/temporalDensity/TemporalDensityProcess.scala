@@ -20,7 +20,7 @@ import org.geotools.process.factory.{DescribeParameter, DescribeProcess, Describ
 import org.geotools.util.NullProgressListener
 import org.joda.time.Interval
 import org.locationtech.geomesa.accumulo.index.QueryHints
-import org.locationtech.geomesa.accumulo.iterators.TemporalDensityIterator.createFeatureType
+import org.locationtech.geomesa.accumulo.iterators.RangeHistogramIterator.createFeatureType
 import org.opengis.feature.Feature
 import org.opengis.feature.simple.SimpleFeature
 
@@ -89,9 +89,9 @@ class TemporalDensityVisitor(features: SimpleFeatureCollection, interval: Interv
 
   def query(source: SimpleFeatureSource, query: Query) = {
     logger.debug("Running Geomesa temporal density process on source type " + source.getClass.getName)
-    query.getHints.put(QueryHints.TEMPORAL_DENSITY_KEY, java.lang.Boolean.TRUE)
-    query.getHints.put(QueryHints.TIME_INTERVAL_KEY, interval)
-    query.getHints.put(QueryHints.TIME_BUCKETS_KEY, buckets)
+    query.getHints.put(QueryHints.RANGE_HISTOGRAM_KEY, java.lang.Boolean.TRUE)
+    query.getHints.put(QueryHints.RANGE_HISTOGRAM_INTERVAL_KEY, interval)
+    query.getHints.put(QueryHints.RANGE_HISTOGRAM_BUCKETS_KEY, buckets)
     source.getFeatures(query)
   }
 }

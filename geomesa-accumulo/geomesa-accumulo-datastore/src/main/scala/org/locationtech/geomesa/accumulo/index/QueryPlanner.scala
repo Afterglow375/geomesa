@@ -97,7 +97,7 @@ case class QueryPlanner(sft: SimpleFeatureType,
     }
 
     def reduce(iter: SFIter): SFIter = if (query.getHints.isTemporalDensityQuery) {
-      TemporalDensityIterator.reduceTemporalFeatures(iter, query)
+      RangeHistogramIterator.reduceFeatures(iter, query)
     } else if (query.getHints.isMapAggregatingQuery) {
       MapAggregatingIterator.reduceMapAggregationFeatures(iter, query)
     } else {
@@ -368,8 +368,8 @@ object QueryPlanner extends Logging {
       BinAggregatingIterator.BIN_SFT
     } else if (query.getHints.isDensityQuery) {
       Z3DensityIterator.DENSITY_SFT
-    } else if (query.getHints.containsKey(TEMPORAL_DENSITY_KEY)) {
-      TemporalDensityIterator.createFeatureType(baseSft)
+    } else if (query.getHints.containsKey(RANGE_HISTOGRAM_KEY)) {
+      RangeHistogramIterator.createFeatureType(baseSft)
     } else if (query.getHints.containsKey(MAP_AGGREGATION_KEY)) {
       val mapAggregationAttribute = query.getHints.get(MAP_AGGREGATION_KEY).asInstanceOf[String]
       val spec = MapAggregatingIterator.projectedSFTDef(mapAggregationAttribute, baseSft)
