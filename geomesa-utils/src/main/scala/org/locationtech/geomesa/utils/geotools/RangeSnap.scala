@@ -9,7 +9,7 @@ package org.locationtech.geomesa.utils.geotools
 
 class RangeSnap(val interval: com.google.common.collect.Range[java.lang.Long], val buckets: Int) {
 
-  val bucketSize: Long = interval.upperEndpoint - interval.lowerEndpoint / buckets
+  val bucketSize: Long = (interval.upperEndpoint - interval.lowerEndpoint) / buckets
 
   /**
    * Computes the bucket where the given value falls under

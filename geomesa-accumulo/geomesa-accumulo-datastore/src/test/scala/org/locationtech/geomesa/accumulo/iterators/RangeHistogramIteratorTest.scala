@@ -98,7 +98,7 @@ class RangeHistogramIteratorTest extends Specification {
     sft.getUserData.put(Constants.SF_PROPERTY_START_TIME, "dtg")
     val ds = createDataStore(sft,0)
     val encodedFeatures = (0 until 150).toArray.map{
-      i => Array(i.toString, i*2, new DateTime("2012-01-01T19:00:00", DateTimeZone.UTC).toDate, "POINT(-77 38)")
+      i => Array(i.toString, "1.0", new DateTime("2012-01-01T19:00:00", DateTimeZone.UTC).toDate, "POINT(-77 38)")
     }
     val fs = loadFeatures(ds, sft, encodedFeatures)
 
@@ -113,7 +113,7 @@ class RangeHistogramIteratorTest extends Specification {
       iter.length mustEqual 1
     }
 
-    "maintain total weights of time" in {
+    "retrieve accurate histogram when all data has same attribute value" in {
       val q = getQuery("(attr BETWEEN 0 AND 300) and BBOX(geom, -80, 33, -70, 40)")
 
       val results = fs.getFeatures(q)
@@ -128,7 +128,7 @@ class RangeHistogramIteratorTest extends Specification {
       histogramMap.size mustEqual 1
     }
 
-    "maintain total weights of time - json" in {
+    "retrieve accurate histogram when all data has same attribute value - json" in {
       val q = getQueryJSON("(attr BETWEEN 0 AND 300) and BBOX(geom, -80, 33, -70, 40)")
 
       val results = fs.getFeatures(q)
@@ -137,7 +137,7 @@ class RangeHistogramIteratorTest extends Specification {
       iter must not beNull
 
       val histogramMap = jsonToHistogramMap(sf.getAttribute(HISTOGRAM_SERIES).asInstanceOf[String])
-      val totalCount = histogramMap.map { case (dateTime, count) => count}.sum
+      val totalCount = histogramMap.map { case (attributeValue, count) => count}.sum
 
       totalCount mustEqual 150
       histogramMap.size mustEqual 1
@@ -146,7 +146,7 @@ class RangeHistogramIteratorTest extends Specification {
     "maintain total irrespective of point" in {
       val ds = createDataStore(sft, 1)
       val encodedFeatures = (0 until 150).toArray.map {
-        i => Array(i.toString, i*2, new DateTime("2012-01-01T19:00:00", DateTimeZone.UTC).toDate, s"POINT(-77.$i 38.$i)")
+        i => Array(i.toString, "1.0", new DateTime("2012-01-01T19:00:00", DateTimeZone.UTC).toDate, s"POINT(-77.$i 38.$i)")
       }
       val fs = loadFeatures(ds, sft, encodedFeatures)
 
@@ -158,16 +158,16 @@ class RangeHistogramIteratorTest extends Specification {
       val sf = sfList.head
       val histogramMap = decodeHistogramMap(sf.getAttribute(HISTOGRAM_SERIES).asInstanceOf[String])
 
-      val total = histogramMap.map { case (dateTime, count) => count}.sum
+      val totalCount = histogramMap.map { case (attributeValue, count) => count}.sum
 
-      total mustEqual 150
+      totalCount mustEqual 150
       histogramMap.size mustEqual 1
     }
 
     "maintain total irrespective of point - json" in {
       val ds = createDataStore(sft, 2)
       val encodedFeatures = (0 until 150).toArray.map {
-        i => Array(i.toString, i*2, new DateTime("2012-01-01T19:00:00", DateTimeZone.UTC).toDate, s"POINT(-77.$i 38.$i)")
+        i => Array(i.toString, "1.0", new DateTime("2012-01-01T19:00:00", DateTimeZone.UTC).toDate, s"POINT(-77.$i 38.$i)")
       }
       val fs = loadFeatures(ds, sft, encodedFeatures)
 
@@ -179,16 +179,16 @@ class RangeHistogramIteratorTest extends Specification {
       val sf = sfList.head
       val histogramMap = jsonToHistogramMap(sf.getAttribute(HISTOGRAM_SERIES).asInstanceOf[String])
 
-      val total = histogramMap.map { case (dateTime, count) => count}.sum
+      val totalCount = histogramMap.map { case (attributeValue, count) => count}.sum
 
-      total mustEqual 150
+      totalCount mustEqual 150
       histogramMap.size mustEqual 1
     }
 
-    "correctly bin off of time intervals" in {
+    "correctly bin off of an attribute's interval" in {
       val ds = createDataStore(sft, 3)
-      val encodedFeatures = (0 until 48).toArray.map {
-        i => Array(i.toString, i*2, new DateTime(s"2012-01-01T${i%24}:00:00", DateTimeZone.UTC).toDate, "POINT(-77 38)")
+      val encodedFeatures = (0 until 150).toArray.map {
+        i => Array(i.toString, i*2, new DateTime(s"2012-01-01T19:00:00", DateTimeZone.UTC).toDate, "POINT(-77 38)")
       }
       val fs = loadFeatures(ds, sft, encodedFeatures)
 
@@ -198,19 +198,19 @@ class RangeHistogramIteratorTest extends Specification {
       val sf = results.features().toList.head
       val histogramMap = decodeHistogramMap(sf.getAttribute(HISTOGRAM_SERIES).asInstanceOf[String])
 
-      val total = histogramMap.map {
-        case (dateTime, count) =>
-          count mustEqual 2L
+      val totalCount = histogramMap.map {
+        case (attributeValue, count) =>
+          count mustEqual 5L
           count}.sum
 
-      total mustEqual 48
-      histogramMap.size mustEqual 24
+      totalCount mustEqual 150
+      histogramMap.size mustEqual 30
     }
 
-    "correctly bin off of time intervals - json" in {
+    "correctly bin off of an attributes intervals - json" in {
       val ds = createDataStore(sft, 4)
-      val encodedFeatures = (0 until 48).toArray.map {
-        i => Array(i.toString, "1.0", new DateTime(s"2012-01-01T${i%24}:00:00", DateTimeZone.UTC).toDate, "POINT(-77 38)")
+      val encodedFeatures = (0 until 150).toArray.map {
+        i => Array(i.toString, i*2, new DateTime(s"2012-01-01T19:00:00", DateTimeZone.UTC).toDate, "POINT(-77 38)")
       }
       val fs = loadFeatures(ds, sft, encodedFeatures)
 
@@ -218,16 +218,16 @@ class RangeHistogramIteratorTest extends Specification {
 
 
       val results = fs.getFeatures(q)
-      val sf = results.features().toList.head.asInstanceOf[SimpleFeature]
+      val sf = results.features().toList.head
       val histogramMap = jsonToHistogramMap(sf.getAttribute(HISTOGRAM_SERIES).asInstanceOf[String])
 
-      val total = histogramMap.map {
-        case (dateTime, count) =>
-          count mustEqual 2L
+      val totalCount = histogramMap.map {
+        case (attributeValue, count) =>
+          count mustEqual 5L
           count}.sum
 
-      total mustEqual 48
-      histogramMap.size mustEqual 24
+      totalCount mustEqual 150
+      histogramMap.size mustEqual 30
     }
 
     "encode decode feature" in {
@@ -244,18 +244,44 @@ class RangeHistogramIteratorTest extends Specification {
       histogramMap.get(2L).get mustEqual 8L
     }
 
-    "query dtg bounds not in DataStore" in {
+    "query attribute bounds not in DataStore" in {
       val ds = createDataStore(sft, 5)
-      val encodedFeatures = (0 until 48).toArray.map {
-        i => Array(i.toString, "1.0", new DateTime(s"2012-02-01T${i%24}:00:00", DateTimeZone.UTC).toDate, "POINT(-77 38)")
+      val encodedFeatures = (0 until 50).toArray.map {
+        i => Array(i.toString, i*2, new DateTime(s"2012-01-01T00:00:00.000Z", DateTimeZone.UTC).toDate, "POINT(-77 38)")
       }
       val fs = loadFeatures(ds, sft, encodedFeatures)
 
-      val q = getQuery("(dtg between '2012-01-01T00:00:00.000Z' AND '2012-01-02T00:00:00.000Z') and BBOX(geom, -80, 33, -70, 40)")
+      val q = getQuery("(attr BETWEEN -20 AND -10) and BBOX(geom, -80, 33, -70, 40)")
 
       val results = fs.getFeatures(q)
       val sfList = results.features().toList
       sfList.length mustEqual 0
+    }
+
+    "query attribute bounds partially in DataStore" in {
+      val ds = createDataStore(sft, 5)
+      val encodedFeatures = (0 until 150).toArray.map {
+        i => Array(i.toString, i*2, new DateTime(s"2012-01-01T00:00:00.000Z", DateTimeZone.UTC).toDate, "POINT(-77 38)")
+      }
+      val fs = loadFeatures(ds, sft, encodedFeatures)
+
+      val q = getQuery("(attr BETWEEN 0 AND 150) and BBOX(geom, -80, 33, -70, 40)")
+
+      val results = fs.getFeatures(q)
+      val sf = results.features().toList.head
+      val histogramMap = decodeHistogramMap(sf.getAttribute(HISTOGRAM_SERIES).asInstanceOf[String])
+
+      val totalCount = histogramMap.map {
+        case (attributeValue, count) =>
+          if (attributeValue == 150) {
+            count mustEqual 1L
+          } else {
+            count mustEqual 5L
+          }
+          count}.sum
+
+      totalCount mustEqual 76
+      histogramMap.size mustEqual 16
     }
 
     "nothing to query over" in {
@@ -263,7 +289,7 @@ class RangeHistogramIteratorTest extends Specification {
       val encodedFeatures = new Array[Array[_]](0)
       val fs = loadFeatures(ds, sft, encodedFeatures)
 
-      val q = getQuery("(dtg between '2012-01-01T00:00:00.000Z' AND '2012-01-02T00:00:00.000Z') and BBOX(geom, -80, 33, -70, 40)")
+      val q = getQuery("(attr BETWEEN 0 AND 300) and BBOX(geom, -80, 33, -70, 40)")
 
       val results = fs.getFeatures(q)
       val sfList = results.features().toList
@@ -275,7 +301,7 @@ class RangeHistogramIteratorTest extends Specification {
       val encodedFeatures = new Array[Array[_]](0)
       val fs = loadFeatures(ds, sft, encodedFeatures)
 
-      val q = getQueryJSON("(dtg between '2012-01-01T00:00:00.000Z' AND '2012-01-02T00:00:00.000Z') and BBOX(geom, -80, 33, -70, 40)")
+      val q = getQueryJSON("(attr BETWEEN 0 AND 300) and BBOX(geom, -80, 33, -70, 40)")
 
       val results = fs.getFeatures(q)
       val sfList = results.features().toList
