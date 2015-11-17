@@ -113,6 +113,17 @@ class RangeHistogramIteratorTest extends Specification {
       iter.length mustEqual 1
     }
 
+    "reduce total features returned - json" in {
+      val q = getQueryJSON("(attr BETWEEN 0 AND 300) and BBOX(geom, -80, 33, -70, 40)")
+
+      val results = fs.getFeatures(q)
+      val allFeatures = results.features()
+      val iter = allFeatures.toList
+
+      (iter must not).beNull
+      iter.length mustEqual 1
+    }
+
     "retrieve accurate histogram when all data has same attribute value" in {
       val q = getQuery("(attr BETWEEN 0 AND 300) and BBOX(geom, -80, 33, -70, 40)")
 
