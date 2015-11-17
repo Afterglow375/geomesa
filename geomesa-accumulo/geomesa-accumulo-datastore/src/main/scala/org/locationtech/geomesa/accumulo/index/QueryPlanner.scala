@@ -96,7 +96,7 @@ case class QueryPlanner(sft: SimpleFeatureType,
       iter
     }
 
-    def reduce(iter: SFIter): SFIter = if (query.getHints.isTemporalDensityQuery) {
+    def reduce(iter: SFIter): SFIter = if (query.getHints.isRangeHistogramQuery) {
       RangeHistogramIterator.reduceFeatures(iter, query)
     } else if (query.getHints.isMapAggregatingQuery) {
       MapAggregatingIterator.reduceMapAggregationFeatures(iter, query)

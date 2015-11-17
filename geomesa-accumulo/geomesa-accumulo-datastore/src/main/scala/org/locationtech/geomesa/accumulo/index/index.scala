@@ -82,7 +82,7 @@ package object index {
         for { w <- Option(hints.get(WIDTH_KEY).asInstanceOf[Int])
               h <- Option(hints.get(HEIGHT_KEY).asInstanceOf[Int]) } yield (w, h)
       def getDensityWeight: Option[String] = Option(hints.get(DENSITY_WEIGHT).asInstanceOf[String])
-      def isTemporalDensityQuery: Boolean = hints.containsKey(RANGE_HISTOGRAM_KEY)
+      def isRangeHistogramQuery: Boolean = hints.containsKey(RANGE_HISTOGRAM_KEY)
       def isMapAggregatingQuery: Boolean = hints.containsKey(MAP_AGGREGATION_KEY)
       def getTransformDefinition: Option[String] = Option(hints.get(TRANSFORMS).asInstanceOf[String])
       def getTransformSchema: Option[SimpleFeatureType] =
