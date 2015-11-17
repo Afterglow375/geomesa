@@ -18,9 +18,8 @@ class RangeSnap(val interval: com.google.common.collect.Range[java.lang.Long], v
    */
   def getBucket(value: Long): Long =
     if (interval.contains(value)) {
-      val ret = (value - interval.lowerEndpoint) / bucketSize
-      val bucketIndex = if (ret >= buckets) buckets -1 else ret.toInt
-      interval.lowerEndpoint + (bucketSize * bucketIndex)
+      val bucketIndex = (value - interval.lowerEndpoint) / bucketSize
+      interval.lowerEndpoint + (bucketSize * bucketIndex.toInt)
     } else if (value > interval.upperEndpoint) {
       interval.upperEndpoint
     } else {
