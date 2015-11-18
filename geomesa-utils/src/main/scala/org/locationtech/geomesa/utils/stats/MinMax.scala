@@ -10,7 +10,6 @@ package org.locationtech.geomesa.utils.stats
 
 import org.opengis.feature.simple.SimpleFeature
 
-
 case class MinMax[T <: Comparable[T]](attribute: String) extends Stat {
 
   var min: T = _
@@ -27,7 +26,6 @@ case class MinMax[T <: Comparable[T]](attribute: String) extends Stat {
   }
 
   override def add(other: Stat): Stat = {
-
     other match {
       case mm: MinMax[T] =>
         updateMin(mm.min)

@@ -15,7 +15,6 @@ import scala.util.parsing.combinator.RegexParsers
 trait Stat {
   def observe(sf: SimpleFeature)
   def add(other: Stat): Stat
-
   def toJson(): String
 }
 

@@ -15,6 +15,10 @@ import com.google.common.primitives.Bytes
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
+/**
+ * Stats are serialized as byte arrays where the first byte indicates which type of stat is present.
+ * The next four bits contain the limit of the serialized information
+ */
 object StatSerialization {
 
   val MINMAX_BYTE: Byte = '0'

@@ -10,10 +10,21 @@ package org.locationtech.geomesa.utils.stats
 
 import org.opengis.feature.simple.SimpleFeature
 
-class RangeHistogram extends Stat {
-  override def observe(sf: SimpleFeature): Unit = ???
+class RangeHistogram[T](attribute: String, buckets: Int, range: com.google.common.collect.Range[T]) extends Stat {
+
+  override def observe(sf: SimpleFeature): Unit = {
+    val sfval = sf.getAttribute(attribute)
+
+    if (sfval != null) {
+      sfval match {
+        case tval: T =>
+
+      }
+    }
+  }
 
   override def toJson(): String = ???
 
   override def add(other: Stat): Stat = ???
 }
+
