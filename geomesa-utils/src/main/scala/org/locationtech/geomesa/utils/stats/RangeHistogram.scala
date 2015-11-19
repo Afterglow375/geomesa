@@ -12,7 +12,6 @@ import java.util.Date
 
 import com.google.common.collect
 import org.opengis.feature.simple.SimpleFeature
-import org.joda.time.{DateTime, DateTimeZone, Interval}
 
 /**
  * Type class for a BinAble type which has to be a type which you can divide a range into
@@ -20,43 +19,95 @@ import org.joda.time.{DateTime, DateTimeZone, Interval}
  */
 object Bins {
   trait BinAble[T] {
-    def getBinSize(numBins: Int, lowerEndpoint: T, upperEndpoint: T): Long
-    def getBinIndex(value: T, numBins: Int, binSize: Long, range: collect.Range[T]): Int
+
+    /**
+     * Computes the appropriate histogram bin that a value falls into
+     * @param value an attribute value from a simple feature
+     * @return the lower end of the histogram bin that the value falls into
+     */
+    def getBin(value: T): T
   }
 
   class BinAbleDate(interval: collect.Range[Date], numBins: Int) extends BinAble[Date] {
-    private val bucketSize: Long = (new DateTime(interval.upperEndpoint.getTime).millis - interval.lowerEndpoint.toMillis) / numBins
+    private val binSize = (interval.upperEndpoint.getTime - interval.lowerEndpoint.getTime) / numBins
 
-    override def getBinSize(numBins: Int, lowerEndpoint: Date, upperEndpoint: Date): Long = ???
-    override def getBinIndex(value: Date, numBins: Int, binSize: Long, range: collect.Range[Date]): Int = ???
+    override def getBin(value: Date): Date = {
+      if (interval.contains(value)) {
+        val bucketIndex = (value.getTime - interval.lowerEndpoint.getTime) / binSize
+        new Date(interval.lowerEndpoint.getTime + (binSize * bucketIndex))
+      } else if (value.getTime > interval.upperEndpoint.getTime) {
+        interval.upperEndpoint
+      } else {
+        interval.lowerEndpoint
+      }
+    }
   }
 
-  class BinAbleInt extends BinAble[Int] {
-    override def getBinSize(numBins: Int, lowerEndpoint: Int, upperEndpoint: Int): Long = ???
-    override def getBinIndex(value: Int, numBins: Int, binSize: Long, range: collect.Range[Int]): Int = ???
+  class BinAbleInt(interval: collect.Range[Int], numBins: Int) extends BinAble[Int] {
+    private val binSize = (interval.upperEndpoint - interval.lowerEndpoint) / numBins
+
+    override def getBin(value: Int): Int = {
+      if (interval.contains(value)) {
+        val bucketIndex = (value - interval.lowerEndpoint) / binSize
+        interval.lowerEndpoint + (binSize * bucketIndex)
+      } else if (value > interval.upperEndpoint) {
+        interval.upperEndpoint
+      } else {
+        interval.lowerEndpoint
+      }
+    }
   }
 
-  class BinAbleLong extends BinAble[Long] {
-    override def getBinSize(numBins: Int, lowerEndpoint: Long, upperEndpoint: Long): Long = ???
-    override def getBinIndex(value: Long, numBins: Int, binSize: Long, range: collect.Range[Long]): Int = ???
+  class BinAbleLong(interval: collect.Range[Long], numBins: Int) extends BinAble[Long] {
+    private val binSize = (interval.upperEndpoint - interval.lowerEndpoint) / numBins
+
+    override def getBin(value: Long): Long = {
+      if (interval.contains(value)) {
+        val bucketIndex = (value - interval.lowerEndpoint) / binSize
+        interval.lowerEndpoint + (binSize * bucketIndex)
+      } else if (value > interval.upperEndpoint) {
+        interval.upperEndpoint
+      } else {
+        interval.lowerEndpoint
+      }
+    }
   }
 
-  class BinAbleFloat extends BinAble[Float] {
-    override def getBinSize(numBins: Int, lowerEndpoint: Float, upperEndpoint: Float): Long = ???
-    override def getBinIndex(value: Float, numBins: Int, binSize: Long, range: collect.Range[Float]): Int = ???
+  class BinAbleFloat(interval: collect.Range[Float], numBins: Int) extends BinAble[Float] {
+    private val binSize = (interval.upperEndpoint - interval.lowerEndpoint) / numBins
+
+    override def getBin(value: Float): Float = {
+      if (interval.contains(value)) {
+        val bucketIndex = (value - interval.lowerEndpoint) / binSize
+        interval.lowerEndpoint + (binSize * bucketIndex.toInt)
+      } else if (value > interval.upperEndpoint) {
+        interval.upperEndpoint
+      } else {
+        interval.lowerEndpoint
+      }
+    }
   }
 
-  class BinAbleDouble extends BinAble[Double] {
-    override def getBinSize(numBins: Int, lowerEndpoint: Double, upperEndpoint: Double): Long = ???
-    override def getBinIndex(value: Double, numBins: Int, binSize: Long, range: collect.Range[Double]): Int = ???
+  class BinAbleDouble(interval: collect.Range[Double], numBins: Int) extends BinAble[Double] {
+    private val binSize = (interval.upperEndpoint - interval.lowerEndpoint) / numBins
+
+    override def getBin(value: Double): Double = {
+      if (interval.contains(value)) {
+        val bucketIndex = (value - interval.lowerEndpoint) / binSize
+        interval.lowerEndpoint + (binSize * bucketIndex.toInt)
+      } else if (value > interval.upperEndpoint) {
+        interval.upperEndpoint
+      } else {
+        interval.lowerEndpoint
+      }
+    }
   }
 }
 
 import org.locationtech.geomesa.utils.stats.Bins._
 
 class RangeHistogram[T](attribute: String, numBins: Int, lowerEndpoint: T, upperEndpoint: T)(implicit rangeSnap: BinAble[T]) extends Stat {
-  private val binSize = rangeSnap.getBinSize(numBins, lowerEndpoint, upperEndpoint)
-  private val histogramRange = com.google.common.collect.Ranges.closed(lowerEndpoint, upperEndpoint)
+  private val histogramRange = collect.Ranges.closed(lowerEndpoint, upperEndpoint)
 
   val histogram = new collection.mutable.HashMap[Long, Long]()
 
@@ -64,7 +115,7 @@ class RangeHistogram[T](attribute: String, numBins: Int, lowerEndpoint: T, upper
     val sfval = sf.getAttribute(attribute)
 
     if (sfval != null) {
-      val binIndex: Long = rangeSnap.getBinIndex(sfval.asInstanceOf[T], numBins, binSize, histogramRange)
+      val binIndex: Long = rangeSnap.getBin(sfval.asInstanceOf[T], numBins, binSize, histogramRange)
       val cur: Long = histogram.getOrElse(binIndex, 0L)
       histogram.put(binIndex, cur + 1L)
     }
