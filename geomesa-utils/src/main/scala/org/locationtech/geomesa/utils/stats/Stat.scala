@@ -26,7 +26,7 @@ object Stat {
 
     def minMaxParser: Parser[MinMax[_]] = {
       "MinMax(" ~> attributeName <~ ")" ^^ {
-        case attribute: String => new MinMax[java.lang.Long](attribute)
+        case attribute: String => new MinMax[_](attribute)
       }
     }
 
@@ -34,14 +34,24 @@ object Stat {
       "IteratorCount" ^^ { case _ => new IteratorStackCounter() }
     }
 
-    def enumeratedHistogramParser: Parser[EnumeratedHistogram[String]] = {
-      "Histogram(" ~> attributeName <~ ")" ^^ {
-        case attribute: String  => new EnumeratedHistogram[String](attribute)
+    def enumeratedHistogramParser[T]: Parser[EnumeratedHistogram[T]] = {
+      "EnumeratedHistogram(" ~> attributeName <~ ")" ^^ {
+        case attribute: String  => new EnumeratedHistogram[T](attribute)
+      }
+    }
+
+    def rangeHistogramParser[T]: Parser[RangeHistogram[T]] = {
+      val buckets, lowerEndpoint, upperEndpoint = """\d+""".r
+      "RangeHistogram(" ~> attributeName <~ "," ~> buckets <~ "," ^^ {
+        case attribute: String => new RangeHistogram[T](attribute)
       }
     }
 
     def statParser: Parser[Stat] = {
-      minMaxParser | iteratorStackParser | enumeratedHistogramParser
+      minMaxParser |
+        iteratorStackParser |
+        enumeratedHistogramParser |
+        rangeHistogramParser
     }
 
     def statsParser: Parser[Stat] = {
