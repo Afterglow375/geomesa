@@ -41,9 +41,9 @@ object Stat {
     }
 
     def rangeHistogramParser[T]: Parser[RangeHistogram[T]] = {
-      val buckets, lowerEndpoint, upperEndpoint = """\d+""".r
-      "RangeHistogram(" ~> attributeName <~ "," ~> buckets <~ "," ^^ {
-        case attribute: String => new RangeHistogram[T](attribute)
+      val number = """\d+""".r
+      "RangeHistogram(" ~> attributeName <~ "," ~> number <~ "," ~> number <~ "," ~> number <~ ")" ^^ {
+        case (attribute, numBins, lowerEndpoint, upperEndpoint) => new RangeHistogram[T](attribute, numBins, lowerEndpoint, upperEndpoint)
       }
     }
 
