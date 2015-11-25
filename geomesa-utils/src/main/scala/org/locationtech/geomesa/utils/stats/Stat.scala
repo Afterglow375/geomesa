@@ -8,6 +8,9 @@
 
 package org.locationtech.geomesa.utils.stats
 
+import java.util.{Date, UUID}
+
+import org.joda.time.format.DateTimeFormat
 import org.opengis.feature.simple.SimpleFeature
 
 import scala.util.parsing.combinator.RegexParsers
@@ -19,14 +22,20 @@ trait Stat {
 }
 
 object Stat {
+  object StatParser {
+    val attributeNameRegex = """\w+""".r
+    val alphabetRegex = """[a-zA-Z]+""".r
+    val numBinRegex = """[1-9][0-9]*""".r // any non-zero positive int
+    val nonEmptyRegex = """[^,)]+""".r
+    val dateFormat = DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
+  }
 
   class StatParser extends RegexParsers {
-
-    val attributeName = """\w+""".r
+    import StatParser._
 
     def minMaxParser: Parser[MinMax[_]] = {
-      "MinMax(" ~> attributeName <~ ")" ^^ {
-        case attribute: String => new MinMax[_](attribute)
+      "MinMax(" ~> attributeNameRegex <~ ")" ^^ {
+        case attribute: String => new MinMax[String](attribute)
       }
     }
 
@@ -35,15 +44,22 @@ object Stat {
     }
 
     def enumeratedHistogramParser[T]: Parser[EnumeratedHistogram[T]] = {
-      "EnumeratedHistogram(" ~> attributeName <~ ")" ^^ {
-        case attribute: String  => new EnumeratedHistogram[T](attribute)
+      "EnumeratedHistogram(" ~> attributeNameRegex <~ ")" ^^ {
+        case attribute: String => new EnumeratedHistogram[T](attribute)
       }
     }
 
-    def rangeHistogramParser[T]: Parser[RangeHistogram[T]] = {
-      val number = """\d+""".r
-      "RangeHistogram(" ~> attributeName <~ "," ~> number <~ "," ~> number <~ "," ~> number <~ ")" ^^ {
-        case (attribute, numBins, lowerEndpoint, upperEndpoint) => new RangeHistogram[T](attribute, numBins, lowerEndpoint, upperEndpoint)
+    def rangeHistogramParser: Parser[RangeHistogram[_]] = {
+      "RangeHistogram(" ~> attributeNameRegex ~ "," ~ alphabetRegex ~ "," ~ numBinRegex ~ "," ~ nonEmptyRegex ~ "," ~ nonEmptyRegex <~ ")" ^^ {
+        case attributeName ~ "," ~ attributeType ~ "," ~ numBins ~ "," ~ lowerEndpoint ~ "," ~ upperEndpoint => {
+          attributeType match {
+            case "Date" => new RangeHistogram[java.util.Date](attributeName, numBins.toInt, dateFormat.parseDateTime(lowerEndpoint).toDate, dateFormat.parseDateTime(upperEndpoint).toDate)
+            case "Integer" => new RangeHistogram[java.lang.Integer](attributeName, numBins.toInt, lowerEndpoint.toInt, upperEndpoint.toInt)
+            case "Long" => new RangeHistogram[java.lang.Long](attributeName, numBins.toInt, lowerEndpoint.toLong, upperEndpoint.toLong)
+            case "Double" => new RangeHistogram[java.lang.Double](attributeName, numBins.toInt, lowerEndpoint.toDouble, upperEndpoint.toDouble)
+            case "Float" => new RangeHistogram[java.lang.Float](attributeName, numBins.toInt, lowerEndpoint.toFloat, upperEndpoint.toFloat)
+          }
+        }
       }
     }
 
@@ -55,7 +71,7 @@ object Stat {
     }
 
     def statsParser: Parser[Stat] = {
-      rep1sep(statParser, ",") ^^ {
+      rep1sep(statParser, ";") ^^ {
         case statParsers: Seq[Stat] => new SeqStat(statParsers)
       }
     }

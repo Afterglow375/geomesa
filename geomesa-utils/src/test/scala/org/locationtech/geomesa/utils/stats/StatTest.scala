@@ -8,19 +8,29 @@
 
 package org.locationtech.geomesa.utils.stats
 
+import java.util.Date
+
 import org.junit.runner.RunWith
-import org.locationtech.geomesa.utils.geotools.SimpleFeatureTypes
+import org.locationtech.geomesa.utils.stats.Stat
 import org.specs2.mutable.Specification
 import org.specs2.runner.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
 class StatTest extends Specification  {
 
-  // Stat's apply method shoul take a SFT and do light validation.
+  // Stat's apply method should take a SFT and do light validation.
   //val sft = SimpleFeatureTypes.createType()
 
-  "DSL" should {
-    "create MinMax stat gather" in {
+  "stats DSL" should {
+    "fail for malformed strings" in {
+      Stat("") must throwAn[Exception]
+      Stat("abcd") must throwAn[Exception]
+      Stat("RangeHistogram()") must throwAn[Exception]
+      Stat("MinMax()") must throwAn[Exception]
+      Stat("MinMax(ab-cd)") must throwAn[Exception]
+    }
+
+    "create MinMax stat" in {
       val stats = Stat("MinMax(foo)")
       val stat  = stats.asInstanceOf[SeqStat].stats.head
 
@@ -28,16 +38,22 @@ class StatTest extends Specification  {
       mm.attribute mustEqual "foo"
     }
 
-    "create a Sequence of Stats" in {
-      val stat = Stat("MinMax(foo),MinMax(bar),IteratorCount")
+    "create RangeHistogram stat" in {
+      val stats = Stat("RangeHistogram(foo,Date,10,2012-01-01T00:00:00.000Z,2012-02-01T00:00:00.000Z)")
+      val stat  = stats.asInstanceOf[SeqStat].stats.head
 
+      val rh = stat.asInstanceOf[RangeHistogram[Date]]
+      rh.frequency must not beNull
+    }
+
+    "create a sequence of stats" in {
+      val stat = Stat("MinMax(foo);MinMax(bar);IteratorCount")
       val stats = stat.asInstanceOf[SeqStat].stats
 
       stats.size mustEqual 3
 
       stats(0).asInstanceOf[MinMax[java.lang.Long]].attribute mustEqual "foo"
       stats(1).asInstanceOf[MinMax[java.lang.Long]].attribute mustEqual "bar"
-
       stats(2) must beAnInstanceOf[IteratorStackCounter]
     }
   }

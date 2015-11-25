@@ -10,124 +10,166 @@ package org.locationtech.geomesa.utils.stats
 
 import java.util.Date
 
-import com.google.common.collect
+import org.apache.commons.math3.stat.Frequency
 import org.opengis.feature.simple.SimpleFeature
 
+import scala.collection.mutable
+import scala.util.parsing.json.JSONObject
+
 /**
- * Type class for a BinAble type which has to be a type which you can divide a range into
+ * Type classes for a BinHelper type which has to be a type which you can divide a range into
  * approximately equal sized sub ranges (which is necessary for a histogram).
+ * Works for dates and any numeric type.
  */
 object Bins {
-  trait BinAble[T] {
-
-    /**
-     * Computes the appropriate histogram bin that a value falls into
-     * @param value an attribute value from a simple feature
-     * @return the lower end of the histogram bin that the value falls into
-     */
-    def getBin(value: T): T
+  trait BinHelper[T] {
+    def getBinSize(numBins: Int, lowerEndpoint: T, upperEndpoint: T): T
+    def frequencyToHistogram(frequency: Frequency, numBins: Int, lowerEndpoint: T, binSize: T): collection.mutable.HashMap[T, Long]
   }
 
-  class BinAbleDate(interval: collect.Range[Date], numBins: Int) extends BinAble[Date] {
-    private val binSize = (interval.upperEndpoint.getTime - interval.lowerEndpoint.getTime) / numBins
+  implicit object BinHelperDate extends BinHelper[Date] {
+    override def getBinSize(numBins: Int, lowerEndpoint: Date, upperEndpoint: Date): Date = {
+      new Date((lowerEndpoint.getTime - upperEndpoint.getTime) / numBins)
+    }
 
-    override def getBin(value: Date): Date = {
-      if (interval.contains(value)) {
-        val bucketIndex = (value.getTime - interval.lowerEndpoint.getTime) / binSize
-        new Date(interval.lowerEndpoint.getTime + (binSize * bucketIndex))
-      } else if (value.getTime > interval.upperEndpoint.getTime) {
-        interval.upperEndpoint
-      } else {
-        interval.lowerEndpoint
+    override def frequencyToHistogram(frequency: Frequency,
+                                      numBins: Int,
+                                      lowerEndpoint: Date,
+                                      binSize: Date): collection.mutable.HashMap[Date, Long] = {
+      val histogramMap = new collection.mutable.HashMap[Date, Long]()
+
+      var lowerBin = lowerEndpoint
+      var upperBin = new Date(lowerEndpoint.getTime + binSize.getTime)
+      for (i <- 0 until numBins) {
+        histogramMap.put(lowerBin, frequency.getCumFreq(upperBin) - frequency.getCumFreq(lowerBin))
+        lowerBin = upperBin
+        upperBin = new Date(upperBin.getTime + binSize.getTime)
       }
+
+      histogramMap
     }
   }
 
-  class BinAbleInt(interval: collect.Range[Int], numBins: Int) extends BinAble[Int] {
-    private val binSize = (interval.upperEndpoint - interval.lowerEndpoint) / numBins
+  implicit object BinHelperLong extends BinHelper[java.lang.Long] {
+    override def getBinSize(numBins: Int, lowerEndpoint: java.lang.Long, upperEndpoint: java.lang.Long): java.lang.Long = {
+      (lowerEndpoint - upperEndpoint) / numBins
+    }
 
-    override def getBin(value: Int): Int = {
-      if (interval.contains(value)) {
-        val bucketIndex = (value - interval.lowerEndpoint) / binSize
-        interval.lowerEndpoint + (binSize * bucketIndex)
-      } else if (value > interval.upperEndpoint) {
-        interval.upperEndpoint
-      } else {
-        interval.lowerEndpoint
+    override def frequencyToHistogram(frequency: Frequency, numBins: Int, lowerEndpoint: java.lang.Long, binSize: java.lang.Long): mutable.HashMap[java.lang.Long, Long] = {
+      val histogramMap = new collection.mutable.HashMap[java.lang.Long, Long]()
+
+      var lowerBin = lowerEndpoint
+      var upperBin = lowerBin + binSize
+      for (i <- 0 until numBins) {
+        histogramMap.put(lowerBin, frequency.getCumFreq(upperBin) - frequency.getCumFreq(lowerBin))
+        lowerBin = upperBin
+        upperBin = upperBin + binSize
       }
+
+      histogramMap
     }
   }
 
-  class BinAbleLong(interval: collect.Range[Long], numBins: Int) extends BinAble[Long] {
-    private val binSize = (interval.upperEndpoint - interval.lowerEndpoint) / numBins
+  implicit object BinHelperInteger extends BinHelper[java.lang.Integer] {
+    override def getBinSize(numBins: Int, lowerEndpoint: java.lang.Integer, upperEndpoint: java.lang.Integer): java.lang.Integer = {
+      (lowerEndpoint - upperEndpoint) / numBins
+    }
 
-    override def getBin(value: Long): Long = {
-      if (interval.contains(value)) {
-        val bucketIndex = (value - interval.lowerEndpoint) / binSize
-        interval.lowerEndpoint + (binSize * bucketIndex)
-      } else if (value > interval.upperEndpoint) {
-        interval.upperEndpoint
-      } else {
-        interval.lowerEndpoint
+    override def frequencyToHistogram(frequency: Frequency, numBins: Int, lowerEndpoint: java.lang.Integer, binSize: java.lang.Integer): mutable.HashMap[java.lang.Integer, Long] = {
+      val histogramMap = new collection.mutable.HashMap[java.lang.Integer, Long]()
+
+      var lowerBin = lowerEndpoint
+      var upperBin = lowerBin + binSize
+      for (i <- 0 until numBins) {
+        histogramMap.put(lowerBin, frequency.getCumFreq(upperBin) - frequency.getCumFreq(lowerBin))
+        lowerBin = upperBin
+        upperBin = upperBin + binSize
       }
+
+      histogramMap
     }
   }
 
-  class BinAbleFloat(interval: collect.Range[Float], numBins: Int) extends BinAble[Float] {
-    private val binSize = (interval.upperEndpoint - interval.lowerEndpoint) / numBins
+  implicit object BinHelperDouble extends BinHelper[java.lang.Double] {
+    override def getBinSize(numBins: Int, lowerEndpoint: java.lang.Double, upperEndpoint: java.lang.Double): java.lang.Double = {
+      (lowerEndpoint - upperEndpoint) / numBins
+    }
 
-    override def getBin(value: Float): Float = {
-      if (interval.contains(value)) {
-        val bucketIndex = (value - interval.lowerEndpoint) / binSize
-        interval.lowerEndpoint + (binSize * bucketIndex.toInt)
-      } else if (value > interval.upperEndpoint) {
-        interval.upperEndpoint
-      } else {
-        interval.lowerEndpoint
+    override def frequencyToHistogram(frequency: Frequency, numBins: Int, lowerEndpoint: java.lang.Double, binSize: java.lang.Double): mutable.HashMap[java.lang.Double, Long] = {
+      val histogramMap = new collection.mutable.HashMap[java.lang.Double, Long]()
+
+      var lowerBin = lowerEndpoint
+      var upperBin = lowerBin + binSize
+      for (i <- 0 until numBins) {
+        histogramMap.put(lowerBin, frequency.getCumFreq(upperBin) - frequency.getCumFreq(lowerBin))
+        lowerBin = upperBin
+        upperBin = upperBin + binSize
       }
+
+      histogramMap
     }
   }
 
-  class BinAbleDouble(interval: collect.Range[Double], numBins: Int) extends BinAble[Double] {
-    private val binSize = (interval.upperEndpoint - interval.lowerEndpoint) / numBins
+  implicit object BinHelperFloat extends BinHelper[java.lang.Float] {
+    override def getBinSize(numBins: Int, lowerEndpoint: java.lang.Float, upperEndpoint: java.lang.Float): java.lang.Float = {
+      (lowerEndpoint - upperEndpoint) / numBins
+    }
 
-    override def getBin(value: Double): Double = {
-      if (interval.contains(value)) {
-        val bucketIndex = (value - interval.lowerEndpoint) / binSize
-        interval.lowerEndpoint + (binSize * bucketIndex.toInt)
-      } else if (value > interval.upperEndpoint) {
-        interval.upperEndpoint
-      } else {
-        interval.lowerEndpoint
+    override def frequencyToHistogram(frequency: Frequency, numBins: Int, lowerEndpoint: java.lang.Float, binSize: java.lang.Float): mutable.HashMap[java.lang.Float, Long] = {
+      val histogramMap = new collection.mutable.HashMap[java.lang.Float, Long]()
+
+      var lowerBin = lowerEndpoint
+      var upperBin = lowerBin + binSize
+      for (i <- 0 until numBins) {
+        histogramMap.put(lowerBin, frequency.getCumFreq(upperBin) - frequency.getCumFreq(lowerBin))
+        lowerBin = upperBin
+        upperBin = upperBin + binSize
       }
+
+      histogramMap
     }
   }
 }
 
 import org.locationtech.geomesa.utils.stats.Bins._
 
-class RangeHistogram[T](attribute: String, numBins: Int, lowerEndpoint: T, upperEndpoint: T)(implicit rangeSnap: BinAble[T]) extends Stat {
-  private val histogramRange = collect.Ranges.closed(lowerEndpoint, upperEndpoint)
+/**
+ * The range histogram's state is stored in the Frequency object, though
+ * a hashmap is computed at the end for the JSON or serialized output.
+ *
+ * @param attribute attribute name as a String
+ * @param numBins number of bins the histogram has
+ * @param lowerEndpoint lower end of histogram
+ * @param upperEndpoint upper end of histogram
+ * @tparam T a comparable type which must have a BinHelper type class
+ */
+class RangeHistogram[T : BinHelper](attribute: String, numBins: Int, lowerEndpoint: T, upperEndpoint: T) extends Stat {
+  val frequency = new Frequency()
 
-  val histogram = new collection.mutable.HashMap[Long, Long]()
+  val binHelper = implicitly[BinHelper[T]]
+  val binSize = binHelper.getBinSize(numBins, lowerEndpoint, upperEndpoint)
 
   override def observe(sf: SimpleFeature): Unit = {
-    val sfval = sf.getAttribute(attribute)
+    val sfval: Comparable[T] = sf.getAttribute(attribute).asInstanceOf[Comparable[T]]
 
     if (sfval != null) {
-      val binIndex: Long = rangeSnap.getBin(sfval.asInstanceOf[T], numBins, binSize, histogramRange)
-      val cur: Long = histogram.getOrElse(binIndex, 0L)
-      histogram.put(binIndex, cur + 1L)
+      frequency.addValue(sfval)
     }
   }
 
-  override def toJson(): String = ???
+  override def toJson(): String = {
+    val histogram = binHelper.frequencyToHistogram(frequency, numBins, lowerEndpoint, binSize)
+    val jsonMap = histogram.toMap.map { case (k, v) => k.toString -> v }
+    new JSONObject(jsonMap).toString()
+  }
 
-  override def add(other: Stat): Stat = ???
+  override def add(other: Stat): Stat = {
+    other match {
+      case rangeHistogram: RangeHistogram[T] =>
+        frequency.merge(rangeHistogram.frequency)
+    }
+
+    this
+  }
 }
-
-object RangeHistogram {
-  type HistogramMap = collection.mutable.HashMap[_, Long]
-}
-
 
