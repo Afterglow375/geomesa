@@ -13,8 +13,7 @@ import java.util.Date
 import org.apache.commons.math3.stat.Frequency
 import org.opengis.feature.simple.SimpleFeature
 
-import scala.collection.mutable
-import scala.util.parsing.json.JSONObject
+import scala.util.parsing.json.{JSONArray, JSONObject}
 
 /**
  * Type classes for a BinHelper type which has to be a type which you can divide a range into
@@ -24,109 +23,136 @@ import scala.util.parsing.json.JSONObject
 object Bins {
   trait BinHelper[T] {
     def getBinSize(numBins: Int, lowerEndpoint: T, upperEndpoint: T): T
-    def frequencyToHistogram(frequency: Frequency, numBins: Int, lowerEndpoint: T, binSize: T): collection.mutable.HashMap[T, Long]
+    def frequencyToHistogram(frequency: Frequency, numBins: Int, lowerEndpoint: T, binSize: T): Array[(T, Long)]
   }
 
   implicit object BinHelperDate extends BinHelper[Date] {
     override def getBinSize(numBins: Int, lowerEndpoint: Date, upperEndpoint: Date): Date = {
-      new Date((lowerEndpoint.getTime - upperEndpoint.getTime) / numBins)
+      new Date((upperEndpoint.getTime - lowerEndpoint.getTime) / numBins)
     }
 
     override def frequencyToHistogram(frequency: Frequency,
                                       numBins: Int,
                                       lowerEndpoint: Date,
-                                      binSize: Date): collection.mutable.HashMap[Date, Long] = {
-      val histogramMap = new collection.mutable.HashMap[Date, Long]()
+                                      binSize: Date): Array[(Date, Long)] = {
+      val histogram = new Array[(Date, Long)](numBins)
 
       var lowerBin = lowerEndpoint
       var upperBin = new Date(lowerEndpoint.getTime + binSize.getTime)
+      var lowerCumFreq = frequency.getCumFreq(lowerBin)
       for (i <- 0 until numBins) {
-        histogramMap.put(lowerBin, frequency.getCumFreq(upperBin) - frequency.getCumFreq(lowerBin))
+        val upperCumFreq = frequency.getCumFreq(upperBin)
+        histogram(i) = (lowerBin, upperCumFreq - lowerCumFreq)
         lowerBin = upperBin
+        lowerCumFreq = upperCumFreq
         upperBin = new Date(upperBin.getTime + binSize.getTime)
       }
 
-      histogramMap
+      histogram
     }
   }
 
   implicit object BinHelperLong extends BinHelper[java.lang.Long] {
     override def getBinSize(numBins: Int, lowerEndpoint: java.lang.Long, upperEndpoint: java.lang.Long): java.lang.Long = {
-      (lowerEndpoint - upperEndpoint) / numBins
+      (upperEndpoint - lowerEndpoint) / numBins
     }
 
-    override def frequencyToHistogram(frequency: Frequency, numBins: Int, lowerEndpoint: java.lang.Long, binSize: java.lang.Long): mutable.HashMap[java.lang.Long, Long] = {
-      val histogramMap = new collection.mutable.HashMap[java.lang.Long, Long]()
+    override def frequencyToHistogram(frequency: Frequency,
+                                      numBins: Int,
+                                      lowerEndpoint: java.lang.Long, 
+                                      binSize: java.lang.Long): Array[(java.lang.Long, Long)] = {
+      val histogram = new Array[(java.lang.Long, Long)](numBins)
 
       var lowerBin = lowerEndpoint
       var upperBin = lowerBin + binSize
+      var lowerCumFreq = frequency.getCumFreq(lowerBin)
       for (i <- 0 until numBins) {
-        histogramMap.put(lowerBin, frequency.getCumFreq(upperBin) - frequency.getCumFreq(lowerBin))
+        val upperCumFreq = frequency.getCumFreq(upperBin)
+        histogram(i) = (lowerBin, upperCumFreq - lowerCumFreq)
         lowerBin = upperBin
+        lowerCumFreq = upperCumFreq
         upperBin = upperBin + binSize
       }
 
-      histogramMap
+      histogram
     }
   }
 
   implicit object BinHelperInteger extends BinHelper[java.lang.Integer] {
     override def getBinSize(numBins: Int, lowerEndpoint: java.lang.Integer, upperEndpoint: java.lang.Integer): java.lang.Integer = {
-      (lowerEndpoint - upperEndpoint) / numBins
+      (upperEndpoint - lowerEndpoint) / numBins
     }
 
-    override def frequencyToHistogram(frequency: Frequency, numBins: Int, lowerEndpoint: java.lang.Integer, binSize: java.lang.Integer): mutable.HashMap[java.lang.Integer, Long] = {
-      val histogramMap = new collection.mutable.HashMap[java.lang.Integer, Long]()
+    override def frequencyToHistogram(frequency: Frequency,
+                                      numBins: Int,
+                                      lowerEndpoint: java.lang.Integer,
+                                      binSize: java.lang.Integer): Array[(java.lang.Integer, Long)] = {
+      val histogram = new Array[(java.lang.Integer, Long)](numBins)
 
       var lowerBin = lowerEndpoint
       var upperBin = lowerBin + binSize
+      var lowerCumFreq = frequency.getCumFreq(lowerBin)
       for (i <- 0 until numBins) {
-        histogramMap.put(lowerBin, frequency.getCumFreq(upperBin) - frequency.getCumFreq(lowerBin))
+        val upperCumFreq = frequency.getCumFreq(upperBin)
+        histogram(i) = (lowerBin, upperCumFreq - lowerCumFreq)
         lowerBin = upperBin
+        lowerCumFreq = upperCumFreq
         upperBin = upperBin + binSize
       }
 
-      histogramMap
+      histogram
     }
   }
 
   implicit object BinHelperDouble extends BinHelper[java.lang.Double] {
     override def getBinSize(numBins: Int, lowerEndpoint: java.lang.Double, upperEndpoint: java.lang.Double): java.lang.Double = {
-      (lowerEndpoint - upperEndpoint) / numBins
+      (upperEndpoint - lowerEndpoint) / numBins
     }
 
-    override def frequencyToHistogram(frequency: Frequency, numBins: Int, lowerEndpoint: java.lang.Double, binSize: java.lang.Double): mutable.HashMap[java.lang.Double, Long] = {
-      val histogramMap = new collection.mutable.HashMap[java.lang.Double, Long]()
+    override def frequencyToHistogram(frequency: Frequency,
+                                      numBins: Int,
+                                      lowerEndpoint: java.lang.Double,
+                                      binSize: java.lang.Double): Array[(java.lang.Double, Long)] = {
+      val histogram = new Array[(java.lang.Double, Long)](numBins)
 
       var lowerBin = lowerEndpoint
       var upperBin = lowerBin + binSize
+      var lowerCumFreq = frequency.getCumFreq(lowerBin)
       for (i <- 0 until numBins) {
-        histogramMap.put(lowerBin, frequency.getCumFreq(upperBin) - frequency.getCumFreq(lowerBin))
+        val upperCumFreq = frequency.getCumFreq(upperBin)
+        histogram(i) = (lowerBin, upperCumFreq - lowerCumFreq)
         lowerBin = upperBin
+        lowerCumFreq = upperCumFreq
         upperBin = upperBin + binSize
       }
 
-      histogramMap
+      histogram
     }
   }
 
   implicit object BinHelperFloat extends BinHelper[java.lang.Float] {
     override def getBinSize(numBins: Int, lowerEndpoint: java.lang.Float, upperEndpoint: java.lang.Float): java.lang.Float = {
-      (lowerEndpoint - upperEndpoint) / numBins
+      (upperEndpoint - lowerEndpoint) / numBins
     }
 
-    override def frequencyToHistogram(frequency: Frequency, numBins: Int, lowerEndpoint: java.lang.Float, binSize: java.lang.Float): mutable.HashMap[java.lang.Float, Long] = {
-      val histogramMap = new collection.mutable.HashMap[java.lang.Float, Long]()
+    override def frequencyToHistogram(frequency: Frequency,
+                                      numBins: Int,
+                                      lowerEndpoint: java.lang.Float,
+                                      binSize: java.lang.Float): Array[(java.lang.Float, Long)] = {
+      val histogram = new Array[(java.lang.Float, Long)](numBins)
 
       var lowerBin = lowerEndpoint
       var upperBin = lowerBin + binSize
+      var lowerCumFreq = frequency.getCumFreq(lowerBin)
       for (i <- 0 until numBins) {
-        histogramMap.put(lowerBin, frequency.getCumFreq(upperBin) - frequency.getCumFreq(lowerBin))
+        val upperCumFreq = frequency.getCumFreq(upperBin)
+        histogram(i) = (lowerBin, upperCumFreq - lowerCumFreq)
         lowerBin = upperBin
+        lowerCumFreq = upperCumFreq
         upperBin = upperBin + binSize
       }
 
-      histogramMap
+      histogram
     }
   }
 }
