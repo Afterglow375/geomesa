@@ -22,8 +22,10 @@ class StatTest extends Specification {
 
   sequential
 
-  val sftSpec = "str:String,int:Integer,long:Long,double:Double,float:Float,geom:Geometry:srid=4326,dtg:Date"
+  val sftSpec = "strAttr:String,intAttr:Integer,longAttr:Long,doubleAttr:Double,floatAttr:Float,geom:Geometry:srid=4326,dtg:Date"
   val sft = SimpleFeatureTypes.createType("test", sftSpec)
+  val intIndex = sft.indexOf("intAttr")
+  val longIndex = sft.indexOf("longAttr")
   val features = (1 to 100).toArray.map {
     i => SimpleFeatureBuilder.build(sft,
       Array("abc", i, i, i, i, "POINT(-77 38)", new DateTime(s"2012-01-01T${i%24}:00:00", DateTimeZone.UTC).toDate).asInstanceOf[Array[AnyRef]],
@@ -32,26 +34,26 @@ class StatTest extends Specification {
 
   "stats" should {
     "fail for malformed strings" in {
-      Stat("") must throwAn[Exception]
-      Stat("abcd") must throwAn[Exception]
-      Stat("RangeHistogram()") must throwAn[Exception]
-      Stat("RangeHistogram(foo,Date2,10,2012-01-01T00:00:00.000Z,2012-02-01T00:00:00.000Z)") must throwAn[Exception]
-      Stat("RangeHistogram(foo,DateTime,10,2012-01-01T00:00:00.000Z,2012-02-01T00:00:00.000Z)") must throwAn[Exception]
-      Stat("MinMax()") must throwAn[Exception]
-      Stat("MinMax(ab-cd)") must throwAn[Exception]
+      Stat(sft, "") must throwAn[Exception]
+      Stat(sft, "abcd") must throwAn[Exception]
+      Stat(sft, "RangeHistogram()") must throwAn[Exception]
+      Stat(sft, "RangeHistogram(foo,Date2,10,2012-01-01T00:00:00.000Z,2012-02-01T00:00:00.000Z)") must throwAn[Exception]
+      Stat(sft, "RangeHistogram(foo,DateTime,10,2012-01-01T00:00:00.000Z,2012-02-01T00:00:00.000Z)") must throwAn[Exception]
+      Stat(sft, "MinMax()") must throwAn[Exception]
+      Stat(sft, "MinMax(ab-cd)") must throwAn[Exception]
     }
 
     "create MinMax stat" in {
-      val stats = Stat("MinMax(foo)")
+      val stats = Stat(sft, "MinMax(intAttr)")
       val stat  = stats.asInstanceOf[SeqStat].stats.head
 
       val mm = stat.asInstanceOf[MinMax[java.lang.Long]]
-      mm.attribute mustEqual "foo"
+      mm.attributeIndex mustEqual intIndex
     }
 
     "create RangeHistogram stat for" in {
       "dates" in {
-        val stats = Stat("RangeHistogram(dtg,Date,12,2012-01-01T00:00:00.000Z,2012-01-01T23:00:00.000Z)")
+        val stats = Stat(sft, "RangeHistogram(dtg,Date,12,2012-01-01T00:00:00.000Z,2012-01-01T23:00:00.000Z)")
         val stat  = stats.asInstanceOf[SeqStat].stats.head
 
         features.foreach { stat.observe }
@@ -62,7 +64,7 @@ class StatTest extends Specification {
       }
 
       "integers" in {
-        val stats = Stat("RangeHistogram(int,Integer,10,5,15)")
+        val stats = Stat(sft, "RangeHistogram(intAttr,Integer,10,5,15)")
         val stat  = stats.asInstanceOf[SeqStat].stats.head
 
         features.foreach { stat.observe }
@@ -73,7 +75,7 @@ class StatTest extends Specification {
       }
 
       "longs" in {
-        val stats = Stat("RangeHistogram(foo,Long,10,5,15)")
+        val stats = Stat(sft, "RangeHistogram(longAttr,Long,10,5,15)")
         val stat  = stats.asInstanceOf[SeqStat].stats.head
 
         val rh = stat.asInstanceOf[RangeHistogram[Long]]
@@ -81,7 +83,7 @@ class StatTest extends Specification {
       }
 
       "doubles" in {
-        val stats = Stat("RangeHistogram(foo,Double,10,5,15)")
+        val stats = Stat(sft, "RangeHistogram(doubleAttr,Double,10,5,15)")
         val stat  = stats.asInstanceOf[SeqStat].stats.head
 
         val rh = stat.asInstanceOf[RangeHistogram[Double]]
@@ -89,7 +91,7 @@ class StatTest extends Specification {
       }
 
       "floats" in {
-        val stats = Stat("RangeHistogram(foo,Float,10,5,15)")
+        val stats = Stat(sft, "RangeHistogram(floatAttr,Float,10,5,15)")
         val stat  = stats.asInstanceOf[SeqStat].stats.head
 
         val rh = stat.asInstanceOf[RangeHistogram[Float]]
@@ -98,13 +100,13 @@ class StatTest extends Specification {
     }
 
     "create a sequence of stats" in {
-      val stat = Stat("MinMax(foo);MinMax(bar);IteratorCount")
+      val stat = Stat(sft, "MinMax(intAttr);MinMax(longAttr);IteratorCount")
       val stats = stat.asInstanceOf[SeqStat].stats
 
       stats.size mustEqual 3
 
-      stats(0).asInstanceOf[MinMax[java.lang.Long]].attribute mustEqual "foo"
-      stats(1).asInstanceOf[MinMax[java.lang.Long]].attribute mustEqual "bar"
+      stats(0).asInstanceOf[MinMax[java.lang.Long]].attributeIndex mustEqual intIndex
+      stats(1).asInstanceOf[MinMax[java.lang.Long]].attributeIndex mustEqual longIndex
       stats(2) must beAnInstanceOf[IteratorStackCounter]
     }
   }

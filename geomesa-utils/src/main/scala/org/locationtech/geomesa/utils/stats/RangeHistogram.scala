@@ -163,20 +163,20 @@ import org.locationtech.geomesa.utils.stats.Bins._
  * The range histogram's state is stored in the Frequency object, though
  * a hashmap is computed at the end for the JSON or serialized output.
  *
- * @param attribute attribute name as a String
+ * @param attributeIndex attribute index for the attribute the histogram is being made for
  * @param numBins number of bins the histogram has
  * @param lowerEndpoint lower end of histogram
  * @param upperEndpoint upper end of histogram
  * @tparam T a comparable type which must have a BinHelper type class
  */
-class RangeHistogram[T : BinHelper](attribute: String, numBins: Int, lowerEndpoint: T, upperEndpoint: T) extends Stat {
+class RangeHistogram[T : BinHelper](attributeIndex: Int, numBins: Int, lowerEndpoint: T, upperEndpoint: T) extends Stat {
   val frequency = new Frequency()
 
   val binHelper = implicitly[BinHelper[T]]
   val binSize = binHelper.getBinSize(numBins, lowerEndpoint, upperEndpoint)
 
   override def observe(sf: SimpleFeature): Unit = {
-    val sfval: Comparable[T] = sf.getAttribute(attribute).asInstanceOf[Comparable[T]]
+    val sfval: Comparable[T] = sf.getAttribute(attributeIndex).asInstanceOf[Comparable[T]]
 
     if (sfval != null) {
       frequency.addValue(sfval)
