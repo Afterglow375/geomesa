@@ -93,10 +93,8 @@ object QueryStatTransform extends StatTransform[QueryStat] {
                                     WIDTH_KEY,
                                     HEIGHT_KEY,
                                     BIN_TRACK_KEY,
-                                    RANGE_HISTOGRAM_KEY,
-                                    RANGE_HISTOGRAM_INTERVAL_KEY,
-                                    RANGE_HISTOGRAM_BUCKETS_KEY,
-                                    RANGE_HISTOGRAM_ATTRIBUTE)
+                                    STATS_KEY,
+                                    STATS_STRING)
 
   /**
    * Converts a query hints object to a string for persisting
@@ -121,11 +119,9 @@ object QueryStatTransform extends StatTransform[QueryStat] {
       case TRANSFORMS                       => "TRANSFORMS"
       case TRANSFORM_SCHEMA                 => "TRANSFORM_SCHEMA"
       case BIN_TRACK_KEY                    => "BIN_TRACK_KEY"
-      case RANGE_HISTOGRAM_KEY              => "RANGE_HISTOGRAM_KEY"
-      case RANGE_HISTOGRAM_INTERVAL_KEY     => "RANGE_HISTOGRAM_INTERVAL_KEY"
+      case STATS_KEY                        => "STATS_KEY"
+      case STATS_STRING                     => "STATS_STRING_KEY"
       case RETURN_ENCODED                   => "RETURN_ENCODED"
-      case RANGE_HISTOGRAM_BUCKETS_KEY      => "RANGE_HISTOGRAM_BUCKETS_KEY"
-      case RANGE_HISTOGRAM_ATTRIBUTE        => "RANGE_HISTOGRAM_ATTRIBUTE"
       case DENSITY_BBOX_KEY                 => "DENSITY_BBOX_KEY"
       case WIDTH_KEY                        => "WIDTH_KEY"
       case HEIGHT_KEY                       => "HEIGHT_KEY"

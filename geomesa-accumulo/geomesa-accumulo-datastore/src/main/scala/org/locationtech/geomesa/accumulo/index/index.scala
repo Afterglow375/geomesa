@@ -48,10 +48,8 @@ package object index {
     val WIDTH_KEY                     = new IntegerKey(256)
     val HEIGHT_KEY                    = new IntegerKey(256)
 
-    val RANGE_HISTOGRAM_KEY           = new ClassKey(classOf[java.lang.Boolean])
-    val RANGE_HISTOGRAM_INTERVAL_KEY  = new ClassKey(classOf[com.google.common.collect.Range[java.lang.Long]])
-    val RANGE_HISTOGRAM_BUCKETS_KEY   = new IntegerKey(256)
-    val RANGE_HISTOGRAM_ATTRIBUTE     = new ClassKey(classOf[java.lang.String])
+    val STATS_KEY                     = new ClassKey(classOf[java.lang.Boolean])
+    val STATS_STRING                  = new ClassKey(classOf[java.lang.String])
     val RETURN_ENCODED                = new ClassKey(classOf[java.lang.Boolean])
 
     val MAP_AGGREGATION_KEY           = new ClassKey(classOf[java.lang.String])
@@ -82,7 +80,7 @@ package object index {
         for { w <- Option(hints.get(WIDTH_KEY).asInstanceOf[Int])
               h <- Option(hints.get(HEIGHT_KEY).asInstanceOf[Int]) } yield (w, h)
       def getDensityWeight: Option[String] = Option(hints.get(DENSITY_WEIGHT).asInstanceOf[String])
-      def isRangeHistogramQuery: Boolean = hints.containsKey(RANGE_HISTOGRAM_KEY)
+      def isStatsIteratorQuery: Boolean = hints.containsKey(STATS_KEY)
       def isMapAggregatingQuery: Boolean = hints.containsKey(MAP_AGGREGATION_KEY)
       def getTransformDefinition: Option[String] = Option(hints.get(TRANSFORMS).asInstanceOf[String])
       def getTransformSchema: Option[SimpleFeatureType] =

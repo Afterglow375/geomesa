@@ -11,8 +11,8 @@
 * accompanies this distribution and is available at
 * http://www.opensource.org/licenses/apache2.0.php.
 *********************************************************************-->
-<!-- curl -u admin:geoserver -H 'Content-type: xml' -XPOST -d@'rangehistogram.xml' http://localhost:8080/geoserver/wps | json_pp -->
-  <ows:Identifier>geomesa:RangeHistogram</ows:Identifier>
+<!-- curl -u admin:geoserver -H 'Content-type: xml' -XPOST -d@'stats.xml' http://localhost:8080/geoserver/wps | json_pp -->
+  <ows:Identifier>geomesa:StatsIteratorProcess</ows:Identifier>
   <wps:DataInputs>
     <wps:Input>
       <ows:Identifier>features</ows:Identifier>
@@ -25,27 +25,9 @@
       </wps:Reference>
     </wps:Input>
     <wps:Input>
-      <ows:Identifier>intervalStart</ows:Identifier>
+      <ows:Identifier>statString</ows:Identifier>
       <wps:Data>
-        <wps:LiteralData>100</wps:LiteralData>
-      </wps:Data>
-    </wps:Input>
-    <wps:Input>
-      <ows:Identifier>intervalEnd</ows:Identifier>
-      <wps:Data>
-        <wps:LiteralData>800</wps:LiteralData>
-      </wps:Data>
-    </wps:Input>
-    <wps:Input>
-      <ows:Identifier>buckets</ows:Identifier>
-      <wps:Data>
-        <wps:LiteralData>20</wps:LiteralData>
-      </wps:Data>
-    </wps:Input>
-    <wps:Input>
-      <ows:Identifier>attribute</ows:Identifier>
-      <wps:Data>
-        <wps:LiteralData>What</wps:LiteralData>
+        <wps:LiteralData>MinMax(foo);MinMax(bar);IteratorCount</wps:LiteralData>
       </wps:Data>
     </wps:Input>
   </wps:DataInputs>

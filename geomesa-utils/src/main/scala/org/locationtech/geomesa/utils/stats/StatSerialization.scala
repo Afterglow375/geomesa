@@ -33,19 +33,21 @@ object StatSerialization {
     wrap(MINMAX_BYTE, s"${mm.attributeIndex};${mm.min};${mm.max}".getBytes())
   }
 
-  def packISC(isc: IteratorStackCounter): Array[Byte] = {
-    wrap(ISC_BYTE, s"${isc.count}".getBytes())
-  }
-
   protected [stats] def unpackMinMax(bytes: Array[Byte]): MinMax[java.lang.Long] = {
     val split = new String(bytes).split(";")
 
     require(split.size == 3)
 
     val stat = new MinMax[java.lang.Long](java.lang.Integer.parseInt(split(0)))
-    stat.min = java.lang.Long.parseLong(split(1))
-    stat.max = java.lang.Long.parseLong(split(2))
+    val min = split(1)
+    val max = split(2)
+    stat.min = if (min == "null") null else java.lang.Long.parseLong(split(1))
+    stat.max = if (max == "null") null else java.lang.Long.parseLong(split(2))
     stat
+  }
+
+  def packISC(isc: IteratorStackCounter): Array[Byte] = {
+    wrap(ISC_BYTE, s"${isc.count}".getBytes())
   }
 
   def unpackIteratorStackCounter(bytes: Array[Byte]): IteratorStackCounter = {
@@ -64,7 +66,6 @@ object StatSerialization {
   }
 
   def unpack(bytes: Array[Byte]): Stat = {
-
     val returnStats: ArrayBuffer[Stat] = new mutable.ArrayBuffer[Stat]()
     var totalSize = bytes.length
     val bb = ByteBuffer.wrap(bytes)

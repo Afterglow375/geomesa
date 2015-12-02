@@ -11,7 +11,7 @@ package org.locationtech.geomesa.utils.stats
 import org.opengis.feature.simple.SimpleFeature
 
 case class MinMax[T <: Comparable[T]](attributeIndex: Int) extends Stat {
-
+  // TODO: handle when min/max never get set
   var min: T = _
   var max: T = _
 
@@ -55,5 +55,5 @@ case class MinMax[T <: Comparable[T]](attributeIndex: Int) extends Stat {
     }
   }
 
-  override def toJson(): String = s"$attributeIndex: { min: $min, max: $max }"
+  override def toJson(): String = s"""$attributeIndex: { "min": $min, "max": $max }"""
 }

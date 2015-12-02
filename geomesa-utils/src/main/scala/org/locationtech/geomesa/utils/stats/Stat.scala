@@ -8,13 +8,16 @@
 
 package org.locationtech.geomesa.utils.stats
 
-import java.util.{Date, UUID}
+import java.util.Date
 
 import org.joda.time.format.DateTimeFormat
 import org.opengis.feature.simple.{SimpleFeatureType, SimpleFeature}
 
 import scala.util.parsing.combinator.RegexParsers
 
+/**
+ * Stats used by the StatsIterator to gain various statistics for a given query.
+ */
 trait Stat {
   def observe(sf: SimpleFeature)
   def add(other: Stat): Stat
@@ -24,14 +27,17 @@ trait Stat {
 object Stat {
   class StatParser(sft: SimpleFeatureType) extends RegexParsers {
     val attributeNameRegex = """\w+""".r
-    val alphabetRegex = """[a-zA-Z]+""".r
     val numBinRegex = """[1-9][0-9]*""".r // any non-zero positive int
     val nonEmptyRegex = """[^,)]+""".r
     val dateFormat = DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
 
     def minMaxParser: Parser[MinMax[_]] = {
       "MinMax(" ~> attributeNameRegex <~ ")" ^^ {
-        case attribute: String => new MinMax[java.lang.Long](sft.indexOf(attribute))
+        case attribute =>
+          val attrIndex = sft.indexOf(attribute)
+          if (attrIndex == -1)
+            throw new Exception(s"Invalid attribute name in stat string: $attribute")
+          new MinMax[java.lang.Long](attrIndex)
       }
     }
 
@@ -41,19 +47,31 @@ object Stat {
 
     def enumeratedHistogramParser[T]: Parser[EnumeratedHistogram[T]] = {
       "EnumeratedHistogram(" ~> attributeNameRegex <~ ")" ^^ {
-        case attribute: String => new EnumeratedHistogram[T](sft.indexOf(attribute))
+        case attribute =>
+          val attrIndex = sft.indexOf(attribute)
+          if (attrIndex == -1)
+            throw new Exception(s"Invalid attribute name in stat string: $attribute")
+          new EnumeratedHistogram[T](attrIndex)
       }
     }
 
     def rangeHistogramParser: Parser[RangeHistogram[_]] = {
-      "RangeHistogram(" ~> attributeNameRegex ~ "," ~ alphabetRegex ~ "," ~ numBinRegex ~ "," ~ nonEmptyRegex ~ "," ~ nonEmptyRegex <~ ")" ^^ {
-        case attribute ~ "," ~ attributeType ~ "," ~ numBins ~ "," ~ lowerEndpoint ~ "," ~ upperEndpoint => {
-          attributeType match {
-            case "Date" => new RangeHistogram[java.util.Date](sft.indexOf(attribute), numBins.toInt, dateFormat.parseDateTime(lowerEndpoint).toDate, dateFormat.parseDateTime(upperEndpoint).toDate)
-            case "Integer" => new RangeHistogram[java.lang.Integer](sft.indexOf(attribute), numBins.toInt, lowerEndpoint.toInt, upperEndpoint.toInt)
-            case "Long" => new RangeHistogram[java.lang.Long](sft.indexOf(attribute), numBins.toInt, lowerEndpoint.toLong, upperEndpoint.toLong)
-            case "Double" => new RangeHistogram[java.lang.Double](sft.indexOf(attribute), numBins.toInt, lowerEndpoint.toDouble, upperEndpoint.toDouble)
-            case "Float" => new RangeHistogram[java.lang.Float](sft.indexOf(attribute), numBins.toInt, lowerEndpoint.toFloat, upperEndpoint.toFloat)
+      "RangeHistogram(" ~> attributeNameRegex ~ "," ~ numBinRegex ~ "," ~ nonEmptyRegex ~ "," ~ nonEmptyRegex <~ ")" ^^ {
+        case attribute ~ "," ~ numBins ~ "," ~ lowerEndpoint ~ "," ~ upperEndpoint => {
+          val attrIndex = sft.indexOf(attribute)
+          if (attrIndex == -1)
+            throw new Exception(s"Invalid attribute name in stat string: $attribute")
+          sft.getType(attribute).getBinding match {
+            case v if v == classOf[Date] =>
+              new RangeHistogram[java.util.Date](attrIndex, numBins.toInt, dateFormat.parseDateTime(lowerEndpoint).toDate, dateFormat.parseDateTime(upperEndpoint).toDate)
+            case v if v == classOf[java.lang.Integer] =>
+              new RangeHistogram[java.lang.Integer](attrIndex, numBins.toInt, lowerEndpoint.toInt, upperEndpoint.toInt)
+            case v if v == classOf[java.lang.Long] =>
+              new RangeHistogram[java.lang.Long](attrIndex, numBins.toInt, lowerEndpoint.toLong, upperEndpoint.toLong)
+            case v if v == classOf[java.lang.Double] =>
+              new RangeHistogram[java.lang.Double](attrIndex, numBins.toInt, lowerEndpoint.toDouble, upperEndpoint.toDouble)
+            case v if v == classOf[java.lang.Float] =>
+              new RangeHistogram[java.lang.Float](attrIndex, numBins.toInt, lowerEndpoint.toFloat, upperEndpoint.toFloat)
           }
         }
       }
@@ -68,7 +86,8 @@ object Stat {
 
     def statsParser: Parser[Stat] = {
       rep1sep(statParser, ";") ^^ {
-        case statParsers: Seq[Stat] => new SeqStat(statParsers)
+        case statParsers: Seq[Stat] =>
+          if (statParsers.length == 1) statParsers.head else new SeqStat(statParsers)
       }
     }
 
@@ -81,6 +100,5 @@ object Stat {
     }
   }
 
-  // Stat's apply method shoul take a SFT and do light validation.
   def apply(sft: SimpleFeatureType, s: String) = new StatParser(sft).parse(s)
 }
