@@ -43,13 +43,52 @@ class StatTest extends Specification {
       Stat(sft, "MinMax(geom)") must throwAn[Exception]
     }
 
-    "create MinMax stat" in {
-      val stat = Stat(sft, "MinMax(intAttr)")
-      val mm = stat.asInstanceOf[MinMax[java.lang.Long]]
-      mm.attributeIndex mustEqual intIndex
+    "create MinMax stats for" in {
+      "dates" in {
+        success
+      }
+
+      "integers" in {
+        val stat = Stat(sft, "MinMax(intAttr)")
+        val minMax = stat.asInstanceOf[MinMax[java.lang.Integer]]
+
+        minMax.attributeIndex mustEqual intIndex
+        minMax.classType mustEqual "java.lang.Integer"
+        minMax.min mustEqual java.lang.Integer.MIN_VALUE
+        minMax.max mustEqual java.lang.Integer.MAX_VALUE
+
+//        features.foreach { stat.observe }
+
+//        minMax.min mustEqual 1
+//        minMax.max mustEqual 100
+      }
+
+//      "longs" in {
+//        val stat = Stat(sft, "RangeHistogram(longAttr,10,5,15)")
+//        features.foreach { stat.observe }
+//        val rh = stat.asInstanceOf[RangeHistogram[Long]]
+//        (rh.histogram must not).beNull
+//        rh.histogram.size mustEqual 10
+//      }
+//
+//      "doubles" in {
+//        val stat = Stat(sft, "RangeHistogram(doubleAttr,10,5,15)")
+//        features.foreach { stat.observe }
+//        val rh = stat.asInstanceOf[RangeHistogram[Double]]
+//        (rh.histogram must not).beNull
+//        rh.histogram.size mustEqual 10
+//      }
+//
+//      "floats" in {
+//        val stat = Stat(sft, "RangeHistogram(floatAttr,10,5,15)")
+//        features.foreach { stat.observe }
+//        val rh = stat.asInstanceOf[RangeHistogram[Float]]
+//        (rh.histogram must not).beNull
+//        rh.histogram.size mustEqual 10
+//      }
     }
 
-    "create RangeHistogram stat for" in {
+    "create RangeHistogram stats for" in {
       "dates" in {
         val stat = Stat(sft, "RangeHistogram(dtg,12,2012-01-01T00:00:00.000Z,2012-01-01T23:00:00.000Z)")
         features.foreach { stat.observe }

@@ -38,12 +38,8 @@ object StatSerialization {
   }
 
   protected [stats] def unpackMinMax(bytes: Array[Byte]): MinMax[_] = {
-//    val stringToType = implicitly[StatHelperFunctions[T]]
-
     val split = new String(bytes).split(";")
-
     require(split.size == 4)
-
     MinMax(java.lang.Integer.parseInt(split(0)), split(1), split(2), split(3))
   }
 

@@ -93,18 +93,8 @@ object Stat {
       "RangeHistogram(" ~> attributeNameRegex ~ "," ~ numBinRegex ~ "," ~ nonEmptyRegex ~ "," ~ nonEmptyRegex <~ ")" ^^ {
         case attribute ~ "," ~ numBins ~ "," ~ lowerEndpoint ~ "," ~ upperEndpoint =>
           val attrIndex = getAttrIndex(attribute)
-          sft.getType(attribute).getBinding match {
-            case v if v == classOf[Date] =>
-              new RangeHistogram[Date](attrIndex, numBins.toInt, dateFormat.parseDateTime(lowerEndpoint).toDate, dateFormat.parseDateTime(upperEndpoint).toDate)
-            case v if v == classOf[java.lang.Integer] =>
-              new RangeHistogram[java.lang.Integer](attrIndex, numBins.toInt, lowerEndpoint.toInt, upperEndpoint.toInt)
-            case v if v == classOf[java.lang.Long] =>
-              new RangeHistogram[java.lang.Long](attrIndex, numBins.toInt, lowerEndpoint.toLong, upperEndpoint.toLong)
-            case v if v == classOf[java.lang.Double] =>
-              new RangeHistogram[java.lang.Double](attrIndex, numBins.toInt, lowerEndpoint.toDouble, upperEndpoint.toDouble)
-            case v if v == classOf[java.lang.Float] =>
-              new RangeHistogram[java.lang.Float](attrIndex, numBins.toInt, lowerEndpoint.toFloat, upperEndpoint.toFloat)
-          }
+          val attrTypeString = sft.getType(attribute).getBinding.getName
+          RangeHistogram(attrIndex, attrTypeString, numBins, lowerEndpoint, upperEndpoint)
       }
     }
 
