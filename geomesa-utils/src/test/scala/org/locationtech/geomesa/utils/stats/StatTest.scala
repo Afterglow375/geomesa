@@ -40,6 +40,7 @@ class StatTest extends Specification {
       Stat(sft, "RangeHistogram(foo,10,2012-01-01T00:00:00.000Z,2012-02-01T00:00:00.000Z)") must throwAn[Exception]
       Stat(sft, "MinMax()") must throwAn[Exception]
       Stat(sft, "MinMax(abcd)") must throwAn[Exception]
+      Stat(sft, "MinMax(geom)") must throwAn[Exception]
     }
 
     "create MinMax stat" in {
@@ -53,32 +54,40 @@ class StatTest extends Specification {
         val stat = Stat(sft, "RangeHistogram(dtg,12,2012-01-01T00:00:00.000Z,2012-01-01T23:00:00.000Z)")
         features.foreach { stat.observe }
         val rh = stat.asInstanceOf[RangeHistogram[Date]]
-        rh.frequency must not beNull
+        (rh.histogram must not).beNull
+        rh.histogram.size mustEqual 12
       }
 
       "integers" in {
-        val stat = Stat(sft, "RangeHistogram(intAttr,10,5,15)")
+        val stat = Stat(sft, "RangeHistogram(doubleAttr,10,5,15)")
         features.foreach { stat.observe }
-        val rh = stat.asInstanceOf[RangeHistogram[Integer]]
-        rh.frequency must not beNull
+        val rh = stat.asInstanceOf[RangeHistogram[java.lang.Double]]
+        (rh.histogram must not).beNull
+        rh.histogram.size mustEqual 10
       }
 
       "longs" in {
         val stat = Stat(sft, "RangeHistogram(longAttr,10,5,15)")
+        features.foreach { stat.observe }
         val rh = stat.asInstanceOf[RangeHistogram[Long]]
-        rh.frequency must not beNull
+        (rh.histogram must not).beNull
+        rh.histogram.size mustEqual 10
       }
 
       "doubles" in {
         val stat = Stat(sft, "RangeHistogram(doubleAttr,10,5,15)")
+        features.foreach { stat.observe }
         val rh = stat.asInstanceOf[RangeHistogram[Double]]
-        rh.frequency must not beNull
+        (rh.histogram must not).beNull
+        rh.histogram.size mustEqual 10
       }
 
       "floats" in {
         val stat = Stat(sft, "RangeHistogram(floatAttr,10,5,15)")
+        features.foreach { stat.observe }
         val rh = stat.asInstanceOf[RangeHistogram[Float]]
-        rh.frequency must not beNull
+        (rh.histogram must not).beNull
+        rh.histogram.size mustEqual 10
       }
     }
 
@@ -88,7 +97,7 @@ class StatTest extends Specification {
 
       stats.size mustEqual 3
 
-      stats(0).asInstanceOf[MinMax[java.lang.Long]].attributeIndex mustEqual intIndex
+      stats(0).asInstanceOf[MinMax[java.lang.Integer]].attributeIndex mustEqual intIndex
       stats(1).asInstanceOf[MinMax[java.lang.Long]].attributeIndex mustEqual longIndex
       stats(2) must beAnInstanceOf[IteratorStackCounter]
     }

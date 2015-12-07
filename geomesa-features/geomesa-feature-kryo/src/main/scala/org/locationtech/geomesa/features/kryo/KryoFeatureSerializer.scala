@@ -328,7 +328,7 @@ object KryoFeatureSerializer {
           new UUID(mostSignificantBits, leastSignificantBits)
         }
         readNullable(w)
-      case ObjectType.GEOMETRY => readNullable((i: Input) => kryoReader.selectGeometryReader(i))
+      case             ObjectType.GEOMETRY => readNullable((i: Input) => kryoReader.selectGeometryReader(i))
       case ObjectType.LIST =>
         val valueReader = matchReader(bindings.head)
         (i: Input) => {

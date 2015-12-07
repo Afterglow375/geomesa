@@ -368,7 +368,7 @@ object QueryPlanner extends Logging {
       BinAggregatingIterator.BIN_SFT
     } else if (query.getHints.isDensityQuery) {
       Z3DensityIterator.DENSITY_SFT
-    } else if (query.getHints.containsKey(STATS_KEY)) {
+    } else if (query.getHints.isStatsIteratorQuery) {
       StatsIterator.createFeatureType(baseSft)
     } else if (query.getHints.containsKey(MAP_AGGREGATION_KEY)) {
       val mapAggregationAttribute = query.getHints.get(MAP_AGGREGATION_KEY).asInstanceOf[String]

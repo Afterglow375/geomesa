@@ -80,7 +80,6 @@ class StatsIteratorTest extends Specification {
   def getQueryJSON(query: String, statString: String): Query = {
     val q = new Query("test", ECQL.toFilter(query))
     val geom = q.getFilter.accept(ExtractBoundsFilterVisitor.BOUNDS_VISITOR, null).asInstanceOf[Envelope]
-    q.getHints.put(QueryHints.STATS_KEY, java.lang.Boolean.TRUE)
     q.getHints.put(QueryHints.STATS_STRING, statString)
     q
   }
@@ -125,7 +124,7 @@ class StatsIteratorTest extends Specification {
 //    }
 
     "work with the MinMax stat" in {
-      val q = getQuery("attr BETWEEN 0 AND 300", "MinMax(attr)")
+      val q = getQuery("attr BETWEEN 0 AND 300 AND BBOX(geom, -80, 33, -70, 40)", "MinMax(attr)")
       val results = fs.getFeatures(q).features().toList
       val sf = results.head
 

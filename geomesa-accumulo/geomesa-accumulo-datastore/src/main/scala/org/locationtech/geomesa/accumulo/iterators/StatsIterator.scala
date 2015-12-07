@@ -26,6 +26,11 @@ import org.locationtech.geomesa.utils.geotools.{GeometryUtils, SimpleFeatureType
 import org.locationtech.geomesa.utils.stats._
 import org.opengis.feature.simple.SimpleFeatureType
 
+/**
+ * Reads simple features and observe them with a Stat server-side
+ * @param other
+ * @param env
+ */
 class StatsIterator(other: StatsIterator, env: IteratorEnvironment)
   extends FeatureAggregatingIterator[StatsIteratorResult](other, env) {
 
@@ -41,8 +46,7 @@ class StatsIterator(other: StatsIterator, env: IteratorEnvironment)
                                                          options: JMap[String, String],
                                                          env: IteratorEnvironment): Unit = {
     val statString = StatsIterator.getStatsString(options)
-    val featureType = StatsIterator.getFeatureType(options)
-    stat = Stat(featureType, statString)
+    stat = Stat(simpleFeatureType, statString)
   }
 
   override def handleKeyValue(resultO: Option[StatsIteratorResult],
@@ -66,27 +70,17 @@ object StatsIterator extends Logging {
    * The config is then read server-side to set up the iterator
    * @param cfg iterator config settings
    * @param statString stat query hint string (e.g. "MinMax(foo)")
-   * @param featureType feature type that the stats iterator is being run against
    */
-  def configure(cfg: IteratorSetting, statString: String, featureType: SimpleFeatureType) = {
+  def configure(cfg: IteratorSetting, statString: String) = {
     setStatsString(cfg, statString)
-    setFeatureType(cfg, featureType)
   }
 
   def setStatsString(iterSettings: IteratorSetting, statString: String): Unit = {
     iterSettings.addOption(STATS_STRING_KEY, statString)
   }
 
-  def setFeatureType(iterSettings: IteratorSetting, featureType: SimpleFeatureType): Unit = {
-    iterSettings.addOption(STATS_FEATURE_TYPE_KEY, SimpleFeatureTypes.encodeType(featureType))
-  }
-
   def getStatsString(options: JMap[String, String]): String = {
     options.get(STATS_STRING_KEY)
-  }
-
-  def getFeatureType(options: JMap[String, String]): SimpleFeatureType = {
-    SimpleFeatureTypes.createType("sft", options.get(STATS_FEATURE_TYPE_KEY))
   }
 
   def createFeatureType(origFeatureType: SimpleFeatureType) = {
@@ -113,6 +107,12 @@ object StatsIterator extends Logging {
     StatSerialization.unpack(bytes)
   }
 
+  /**
+   * Reduces computed simple features which contain stat information into one on the client
+   * @param features
+   * @param query
+   * @return
+   */
   def reduceFeatures(features: SFIter, query: Query): SFIter = {
     val encode = query.getHints.containsKey(RETURN_ENCODED)
     val sft = query.getHints.getReturnSft
@@ -136,6 +136,7 @@ object StatsIterator extends Logging {
 }
 
 case class StatsIteratorResult(stat: Stat) extends Result {
-  override def addToFeature(featureBuilder: SimpleFeatureBuilder): Unit =
+  override def addToFeature(featureBuilder: SimpleFeatureBuilder): Unit = {
     featureBuilder.add(StatsIterator.encodeStat(stat))
+  }
 }

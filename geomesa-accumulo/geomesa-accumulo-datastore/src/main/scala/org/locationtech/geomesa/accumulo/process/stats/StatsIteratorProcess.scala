@@ -73,7 +73,6 @@ class StatsVisitor(features: SimpleFeatureCollection, statString: String)
 
   def query(source: SimpleFeatureSource, query: Query) = {
     logger.debug("Running Geomesa stats iterator process on source type " + source.getClass.getName)
-    query.getHints.put(QueryHints.STATS_KEY, java.lang.Boolean.TRUE)
     query.getHints.put(QueryHints.STATS_STRING, statString)
     source.getFeatures(query)
   }

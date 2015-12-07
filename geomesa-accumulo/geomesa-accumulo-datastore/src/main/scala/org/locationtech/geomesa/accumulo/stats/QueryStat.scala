@@ -93,7 +93,6 @@ object QueryStatTransform extends StatTransform[QueryStat] {
                                     WIDTH_KEY,
                                     HEIGHT_KEY,
                                     BIN_TRACK_KEY,
-                                    STATS_KEY,
                                     STATS_STRING)
 
   /**
@@ -119,7 +118,6 @@ object QueryStatTransform extends StatTransform[QueryStat] {
       case TRANSFORMS                       => "TRANSFORMS"
       case TRANSFORM_SCHEMA                 => "TRANSFORM_SCHEMA"
       case BIN_TRACK_KEY                    => "BIN_TRACK_KEY"
-      case STATS_KEY                        => "STATS_KEY"
       case STATS_STRING                     => "STATS_STRING_KEY"
       case RETURN_ENCODED                   => "RETURN_ENCODED"
       case DENSITY_BBOX_KEY                 => "DENSITY_BBOX_KEY"

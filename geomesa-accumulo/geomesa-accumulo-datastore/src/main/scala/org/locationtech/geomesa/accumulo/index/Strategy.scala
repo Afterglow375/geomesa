@@ -191,7 +191,7 @@ object Strategy extends Logging {
                                    schema: String,
                                    featureEncoding: SerializationType,
                                    featureType: SimpleFeatureType) = hints match {
-    case _ if hints.containsKey(STATS_KEY) =>
+    case _ if hints.isStatsIteratorQuery =>
       val clazz = classOf[StatsIterator]
 
       val cfg = new IteratorSetting(iteratorPriority_AnalysisIterator,
@@ -200,7 +200,7 @@ object Strategy extends Logging {
 
       val statString = hints.get(STATS_STRING).asInstanceOf[java.lang.String]
 
-      StatsIterator.configure(cfg, statString, featureType)
+      StatsIterator.configure(cfg, statString)
 
       configureFeatureEncoding(cfg, featureEncoding)
       configureFeatureType(cfg, featureType)

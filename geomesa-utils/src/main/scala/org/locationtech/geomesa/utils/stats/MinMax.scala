@@ -8,52 +8,119 @@
 
 package org.locationtech.geomesa.utils.stats
 
+import java.util.Date
+
 import org.opengis.feature.simple.SimpleFeature
 
-case class MinMax[T <: Comparable[T]](attributeIndex: Int) extends Stat {
-  // TODO: handle when min/max never get set
-  var min: T = _
-  var max: T = _
+sealed trait MinMax[T] extends Stat {
+  def attributeIndex: Int
+  def classType: String
+  def min: T
+  def max: T
+}
 
-  override def observe(sf: SimpleFeature): Unit = {
-
-    val sfval = sf.getAttribute(attributeIndex)
-
-    if (sfval != null) {
-      updateMin(sfval.asInstanceOf[T])
-      updateMax(sfval.asInstanceOf[T])
+object MinMax {
+  /**
+   * Creates a MinMax object depending on the type of the attribute.
+   * Works with dates, integers, longs, doubles, and floats.
+   * @param attrIndex attribute index within the SFT
+   * @param attrTypeString the type of the attribute (e.g. float, double, int, etc). Necessary for serialization
+   * @param min minimum value
+   * @param max maximum value
+   * @return a MinMax object
+   */
+  def apply(attrIndex: Int, attrTypeString: String, min: String, max: String): MinMax[_] = {
+    val attrType = Class.forName(attrTypeString)
+    attrType match {
+      case v if v == classOf[Date] =>
+        if (min == null && max == null) {
+          new MinMaxImpl[Date](attrIndex, attrTypeString, new Date(Long.MinValue), new Date(Long.MaxValue))
+        } else {
+          new MinMaxImpl[Date](attrIndex, attrTypeString,
+            StatHelpers.dateFormat.parseDateTime(min).toDate, StatHelpers.dateFormat.parseDateTime(max).toDate)
+        }
+      case v if v == classOf[java.lang.Integer] =>
+        if (min == null && max == null) {
+          new MinMaxImpl[java.lang.Integer](attrIndex, attrTypeString, Integer.MIN_VALUE, Integer.MAX_VALUE)
+        } else {
+          new MinMaxImpl[java.lang.Integer](attrIndex, attrTypeString,
+            java.lang.Integer.parseInt(min), java.lang.Integer.parseInt(max))
+        }
+      case v if v == classOf[java.lang.Long] =>
+        if (min == null && max == null) {
+          new MinMaxImpl[java.lang.Long](attrIndex, attrTypeString, java.lang.Long.MIN_VALUE, java.lang.Long.MAX_VALUE)
+        } else {
+          new MinMaxImpl[java.lang.Long](attrIndex, attrTypeString,
+            java.lang.Long.parseLong(min), java.lang.Long.parseLong(max))
+        }
+      case v if v == classOf[java.lang.Float] =>
+        if (min == null && max == null) {
+          new MinMaxImpl[java.lang.Float](attrIndex, attrTypeString, java.lang.Float.MIN_VALUE, java.lang.Float.MAX_VALUE)
+        } else {
+          new MinMaxImpl[java.lang.Float](attrIndex, attrTypeString,
+            java.lang.Float.parseFloat(min), java.lang.Float.parseFloat(max))
+        }
+      case v if v == classOf[java.lang.Double] =>
+        if (min == null && max == null) {
+          new MinMaxImpl[java.lang.Double](attrIndex, attrTypeString, java.lang.Double.MIN_VALUE, java.lang.Double.MAX_VALUE)
+        } else {
+          new MinMaxImpl[java.lang.Double](attrIndex, attrTypeString,
+            java.lang.Double.parseDouble(min), java.lang.Double.parseDouble(max))
+        }
     }
   }
 
-  override def add(other: Stat): Stat = {
-    other match {
-      case mm: MinMax[T] =>
-        updateMin(mm.min)
-        updateMax(mm.max)
+  /**
+   * The MinMax stat merely returns the min/max of an attribute's values.
+   * @param attributeIndex attribute index for the attribute the histogram is being made for
+   * @param classType class type as a string to make serialization easier
+   * @param min minimum value
+   * @param max maximum value
+   * @tparam T the type of the attribute the stat is targeting (needs to be comparable)
+   */
+  private case class MinMaxImpl[T <: Comparable[T]](attributeIndex: Int, classType: String, var min: T, var max: T) extends MinMax[T] {
+    if (min == null || max == null) {
+      throw new Exception("Null min or max encountered when creating MinMax class.") // shouldn't happen, but just to be safe
     }
 
-    this
-  }
+    override def observe(sf: SimpleFeature): Unit = {
+      val sfval = sf.getAttribute(attributeIndex)
 
-  private def updateMin(sfval : T): Unit = {
-    if (min == null) {
-      min = sfval
-    } else {
+      if (sfval != null) {
+        updateMinAndMax(sfval.asInstanceOf[T])
+      }
+    }
+
+    override def add(other: Stat): Stat = {
+      other match {
+        case mm: MinMax[T] =>
+          updateMin(mm.min)
+          updateMax(mm.max)
+      }
+
+      this
+    }
+
+    private def updateMinAndMax(sfval: T): Unit = {
+      if (min.compareTo(sfval) > 0) {
+        min = sfval
+      } else if (max.compareTo(sfval) < 0) {
+        max = sfval
+      }
+    }
+
+    private def updateMin(sfval: T): Unit = {
       if (min.compareTo(sfval) > 0) {
         min = sfval
       }
     }
-  }
 
-  private def updateMax(sfval : T): Unit = {
-    if (max == null) {
-      max = sfval
-    } else {
+    private def updateMax(sfval: T): Unit = {
       if (max.compareTo(sfval) < 0) {
         max = sfval
       }
     }
-  }
 
-  override def toJson(): String = s"""$attributeIndex: { "min": $min, "max": $max }"""
+    override def toJson(): String = s"""{ "min": $min, "max": $max }"""
+  }
 }

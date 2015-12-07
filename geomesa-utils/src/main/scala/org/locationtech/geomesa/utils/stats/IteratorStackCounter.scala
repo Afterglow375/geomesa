@@ -16,7 +16,7 @@ case class IteratorStackCounter extends Stat {
 
   override def observe(sf: SimpleFeature): Unit = { }
 
-  override def toJson(): String = s"iteratorStackCount:$count"
+  override def toJson(): String = s"""{ "iteratorStackCount": $count }"""
 
   override def add(other: Stat): Stat = {
     other match {

@@ -16,14 +16,39 @@ import org.opengis.feature.simple.{SimpleFeatureType, SimpleFeature}
 import scala.util.parsing.combinator.RegexParsers
 
 /**
- * Stats used by the StatsIterator to gain various statistics for a given query.
+ * Stats used by the StatsIterator to compute various statistics server-side for a given query.
  */
 trait Stat {
+  /**
+   * Compute statistics based upon the given simple feature.
+   * This method will be called for every SimpleFeature a query returns.
+   * @param sf
+   */
   def observe(sf: SimpleFeature)
+
+  /**
+   * Meant to be used to combine two Stats of the same subtype.
+   * Used in the "reduce" step client-side.
+   * @param other
+   * @return
+   */
   def add(other: Stat): Stat
+
+  /**
+   * Serves as serialization needed for storing the computed statistic in a SimpleFeature.
+   * @return
+   */
   def toJson(): String
 }
 
+/**
+ * This class contains parsers which dictate how to instantiate a particular Stat.
+ * Stats are created by passing a stats string as a query hint (QueryHints.STATS_STRING).
+ *
+ * A valid stats string should adhere to the parsers here:
+ * e.g. "MinMax(attributeName);IteratorCount" or "RangeHistogram(attributeName,10,0,100)"
+ * (see tests for more use cases)
+ */
 object Stat {
   class StatParser(sft: SimpleFeatureType) extends RegexParsers {
     val attributeNameRegex = """\w+""".r
@@ -34,10 +59,9 @@ object Stat {
     def minMaxParser: Parser[MinMax[_]] = {
       "MinMax(" ~> attributeNameRegex <~ ")" ^^ {
         case attribute =>
-          val attrIndex = sft.indexOf(attribute)
-          if (attrIndex == -1)
-            throw new Exception(s"Invalid attribute name in stat string: $attribute")
-          new MinMax[java.lang.Long](attrIndex)
+          val attrIndex = StatHelpers.getAttrIndex(sft, attribute)
+          val attrTypeString = sft.getType(attribute).getBinding.getName
+          MinMax(attrIndex, attrTypeString, null, null)
       }
     }
 
@@ -48,22 +72,18 @@ object Stat {
     def enumeratedHistogramParser[T]: Parser[EnumeratedHistogram[T]] = {
       "EnumeratedHistogram(" ~> attributeNameRegex <~ ")" ^^ {
         case attribute =>
-          val attrIndex = sft.indexOf(attribute)
-          if (attrIndex == -1)
-            throw new Exception(s"Invalid attribute name in stat string: $attribute")
+          val attrIndex = StatHelpers.getAttrIndex(sft, attribute)
           new EnumeratedHistogram[T](attrIndex)
       }
     }
 
     def rangeHistogramParser: Parser[RangeHistogram[_]] = {
       "RangeHistogram(" ~> attributeNameRegex ~ "," ~ numBinRegex ~ "," ~ nonEmptyRegex ~ "," ~ nonEmptyRegex <~ ")" ^^ {
-        case attribute ~ "," ~ numBins ~ "," ~ lowerEndpoint ~ "," ~ upperEndpoint => {
-          val attrIndex = sft.indexOf(attribute)
-          if (attrIndex == -1)
-            throw new Exception(s"Invalid attribute name in stat string: $attribute")
+        case attribute ~ "," ~ numBins ~ "," ~ lowerEndpoint ~ "," ~ upperEndpoint =>
+          val attrIndex = StatHelpers.getAttrIndex(sft, attribute)
           sft.getType(attribute).getBinding match {
             case v if v == classOf[Date] =>
-              new RangeHistogram[java.util.Date](attrIndex, numBins.toInt, dateFormat.parseDateTime(lowerEndpoint).toDate, dateFormat.parseDateTime(upperEndpoint).toDate)
+              new RangeHistogram[Date](attrIndex, numBins.toInt, dateFormat.parseDateTime(lowerEndpoint).toDate, dateFormat.parseDateTime(upperEndpoint).toDate)
             case v if v == classOf[java.lang.Integer] =>
               new RangeHistogram[java.lang.Integer](attrIndex, numBins.toInt, lowerEndpoint.toInt, upperEndpoint.toInt)
             case v if v == classOf[java.lang.Long] =>
@@ -73,7 +93,6 @@ object Stat {
             case v if v == classOf[java.lang.Float] =>
               new RangeHistogram[java.lang.Float](attrIndex, numBins.toInt, lowerEndpoint.toFloat, upperEndpoint.toFloat)
           }
-        }
       }
     }
 

@@ -11,83 +11,94 @@ package org.locationtech.geomesa.utils.stats
 import java.nio.ByteBuffer
 
 import com.google.common.primitives.Bytes
+import org.locationtech.geomesa.utils.stats.StatHelpers._
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 /**
- * Stats are serialized as byte arrays where the first byte indicates which type of stat is present.
- * The next four bits contain the limit of the serialized information
+ * Stats are serialized as a byte array where the first byte indicates which type of stat is present.
+ * The next four bits contain the size of the serialized information.
+ * A SeqStat is serialized the same way, with each individual stat immediately following the previous in the byte array.
  */
 object StatSerialization {
+  // bytes indicating the type of stat
+  val MINMAX_BYTE: Byte           = '0'
+  val ISC_BYTE: Byte              = '1'
+  val RANGE_HISTOGRAM: Byte       = '2'
+  val ENUMERATION_HISTOGRAM: Byte = '3'
 
-  val MINMAX_BYTE: Byte = '0'
-  val ISC_BYTE: Byte    = '1'
-
-  private def wrap(kind: Byte, bytes: Array[Byte]): Array[Byte] = {
+  private def serializeStat(kind: Byte, bytes: Array[Byte]): Array[Byte] = {
     val size = ByteBuffer.allocate(4).putInt(bytes.length).array
     Bytes.concat(Array(kind), size, bytes)
   }
 
   protected [stats] def packMinMax[T <: Comparable[T]](mm: MinMax[T]): Array[Byte] = {
-    wrap(MINMAX_BYTE, s"${mm.attributeIndex};${mm.min};${mm.max}".getBytes())
+    serializeStat(MINMAX_BYTE, s"${mm.attributeIndex};${mm.classType};${mm.min};${mm.max}".getBytes)
   }
 
-  protected [stats] def unpackMinMax(bytes: Array[Byte]): MinMax[java.lang.Long] = {
+  protected [stats] def unpackMinMax[T : StatHelperFunctions](bytes: Array[Byte]): MinMax[_] = {
+//    val stringToType = implicitly[StatHelperFunctions[T]]
+
     val split = new String(bytes).split(";")
 
-    require(split.size == 3)
+    require(split.size == 4)
 
-    val stat = new MinMax[java.lang.Long](java.lang.Integer.parseInt(split(0)))
-    val min = split(1)
-    val max = split(2)
-    stat.min = if (min == "null") null else java.lang.Long.parseLong(split(1))
-    stat.max = if (max == "null") null else java.lang.Long.parseLong(split(2))
-    stat
+    MinMax(java.lang.Integer.parseInt(split(0)), split(1), split(2), split(3))
   }
 
-  def packISC(isc: IteratorStackCounter): Array[Byte] = {
-    wrap(ISC_BYTE, s"${isc.count}".getBytes())
+  protected [stats] def packISC(isc: IteratorStackCounter): Array[Byte] = {
+    serializeStat(ISC_BYTE, s"${isc.count}".getBytes)
   }
 
-  def unpackIteratorStackCounter(bytes: Array[Byte]): IteratorStackCounter = {
-    val stat = new IteratorStackCounter
+  protected [stats] def unpackIteratorStackCounter(bytes: Array[Byte]): IteratorStackCounter = {
+    val stat = new IteratorStackCounter()
     stat.count = java.lang.Long.parseLong(new String(bytes))
     stat
   }
 
+//  protected [stats] def packRangeHistogram(rh: RangeHistogram[T]): Array[Byte] = {
+
+//  }
+
+  /**
+   * Uses individual stat pack methods to serialize the stat.
+   * @param stat the given stat to serialize
+   * @return
+   */
   def pack(stat: Stat): Array[Byte] = {
-    // Uses individual pack m
     stat match {
-      case mm: MinMax[_]             => packMinMax(mm)
-      case isc: IteratorStackCounter => packISC(isc)
-      case seq: SeqStat              => Bytes.concat(seq.stats.map(pack) : _*)
+      case mm: MinMax[_]                => packMinMax(mm)
+      case isc: IteratorStackCounter    => packISC(isc)
+//      case rh: RangeHistogram[_]        => packRangeHistogram(rh)
+//      case eh: EnumeratedHistogram[_]   => packEnumerationHistogram(eh)
+      case seq: SeqStat                 => Bytes.concat(seq.stats.map(pack) : _*)
     }
   }
 
+  /**
+   * Deserializes the stat.
+   * @param bytes the serialized stat
+   * @return
+   */
   def unpack(bytes: Array[Byte]): Stat = {
     val returnStats: ArrayBuffer[Stat] = new mutable.ArrayBuffer[Stat]()
-    var totalSize = bytes.length
     val bb = ByteBuffer.wrap(bytes)
 
-    var pointer = 0
+    var bytePointer = 0
+    while (bytePointer < bytes.length - 1) {
+      val statType = bytes(bytePointer)
+      val statSize = bb.getInt(bytePointer + 1)
 
-    // Loop begins
-    while (pointer < totalSize - 1) {
-
-      val kind = bytes(pointer)
-      val size = bb.getInt(pointer + 1)
-
-      kind match {
+      statType match {
         case MINMAX_BYTE =>
-          val stat = unpackMinMax(bytes.slice(pointer + 5, pointer + 5 + size))
+          val stat = unpackMinMax(bytes.slice(bytePointer + 5, bytePointer + 5 + statSize))
           returnStats += stat
         case ISC_BYTE =>
-          val stat = unpackIteratorStackCounter(bytes.slice(pointer + 5, pointer + 5 + size))
+          val stat = unpackIteratorStackCounter(bytes.slice(bytePointer + 5, bytePointer + 5 + statSize))
           returnStats += stat
       }
-      pointer += size + 5
-      // Loop Ends
+      bytePointer += statSize + 5
     }
 
     returnStats.size match {
