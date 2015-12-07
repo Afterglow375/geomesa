@@ -56,10 +56,22 @@ object Stat {
     val nonEmptyRegex = """[^,)]+""".r
     val dateFormat = DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
 
+    /**
+     * Obtains the index of the attribute within the SFT
+     * @param attribute attribute name as a string
+     * @return attribute index
+     */
+    private def getAttrIndex(attribute: String): Int = {
+      val attrIndex = sft.indexOf(attribute)
+      if (attrIndex == -1)
+        throw new Exception(s"Invalid attribute name in stat string: $attribute")
+      attrIndex
+    }
+
     def minMaxParser: Parser[MinMax[_]] = {
       "MinMax(" ~> attributeNameRegex <~ ")" ^^ {
         case attribute =>
-          val attrIndex = StatHelpers.getAttrIndex(sft, attribute)
+          val attrIndex = getAttrIndex(attribute)
           val attrTypeString = sft.getType(attribute).getBinding.getName
           MinMax(attrIndex, attrTypeString, null, null)
       }
@@ -72,7 +84,7 @@ object Stat {
     def enumeratedHistogramParser[T]: Parser[EnumeratedHistogram[T]] = {
       "EnumeratedHistogram(" ~> attributeNameRegex <~ ")" ^^ {
         case attribute =>
-          val attrIndex = StatHelpers.getAttrIndex(sft, attribute)
+          val attrIndex = getAttrIndex(attribute)
           new EnumeratedHistogram[T](attrIndex)
       }
     }
@@ -80,7 +92,7 @@ object Stat {
     def rangeHistogramParser: Parser[RangeHistogram[_]] = {
       "RangeHistogram(" ~> attributeNameRegex ~ "," ~ numBinRegex ~ "," ~ nonEmptyRegex ~ "," ~ nonEmptyRegex <~ ")" ^^ {
         case attribute ~ "," ~ numBins ~ "," ~ lowerEndpoint ~ "," ~ upperEndpoint =>
-          val attrIndex = StatHelpers.getAttrIndex(sft, attribute)
+          val attrIndex = getAttrIndex(attribute)
           sft.getType(attribute).getBinding match {
             case v if v == classOf[Date] =>
               new RangeHistogram[Date](attrIndex, numBins.toInt, dateFormat.parseDateTime(lowerEndpoint).toDate, dateFormat.parseDateTime(upperEndpoint).toDate)

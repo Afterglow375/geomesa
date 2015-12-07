@@ -33,11 +33,11 @@ object StatSerialization {
     Bytes.concat(Array(kind), size, bytes)
   }
 
-  protected [stats] def packMinMax[T <: Comparable[T]](mm: MinMax[T]): Array[Byte] = {
+  protected [stats] def packMinMax(mm: MinMax[_]): Array[Byte] = {
     serializeStat(MINMAX_BYTE, s"${mm.attributeIndex};${mm.classType};${mm.min};${mm.max}".getBytes)
   }
 
-  protected [stats] def unpackMinMax[T : StatHelperFunctions](bytes: Array[Byte]): MinMax[_] = {
+  protected [stats] def unpackMinMax(bytes: Array[Byte]): MinMax[_] = {
 //    val stringToType = implicitly[StatHelperFunctions[T]]
 
     val split = new String(bytes).split(";")

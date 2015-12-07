@@ -39,7 +39,6 @@ object StatHelpers {
       }
     }
 
-    val dateFormat = DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
     override def fromString(value: String): Date = {
       dateFormat.parseDateTime(value).toDate
     }
@@ -140,19 +139,4 @@ object StatHelpers {
       java.lang.Float.parseFloat(value)
     }
   }
-
-  /**
-   * Obtains the index of the attribute within the SFT
-   * @param sft sft used to find attribute index
-   * @param attribute attribute name as a string
-   * @return attribute index
-   */
-  def getAttrIndex(sft: SimpleFeatureType, attribute: String): Int = {
-    val attrIndex = sft.indexOf(attribute)
-    if (attrIndex == -1)
-      throw new Exception(s"Invalid attribute name in stat string: $attribute")
-    attrIndex
-  }
-
-  def createRangeHistogramFromString[T](attributeType: String): MinMax[T] = ???
 }

@@ -20,13 +20,9 @@ class StatSerializationTest extends Specification {
   "StatsSerlization" should {
     "pack and unpack" >> {
       val attributeIndex = 1
-      val mm = new MinMax[java.lang.Long](attributeIndex)
-
       val min = -235L
       val max = 12345L
-
-      mm.min = min
-      mm.max = max
+      val mm = MinMax(attributeIndex, "java.lang.Long", min.toString, max.toString)
 
       val isc = new IteratorStackCounter
       val count = 987654321L
