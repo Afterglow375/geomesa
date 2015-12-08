@@ -13,8 +13,8 @@ import java.util.Date
 import org.opengis.feature.simple.SimpleFeature
 
 sealed trait MinMax[T] extends Stat {
-  def attributeIndex: Int
-  def classType: String
+  def attrIndex: Int
+  def attrType: String
   def min: T
   def max: T
 }
@@ -68,19 +68,19 @@ object MinMax {
 
   /**
    * The MinMax stat merely returns the min/max of an attribute's values.
-   * @param attributeIndex attribute index for the attribute the histogram is being made for
-   * @param classType class type as a string to make serialization easier
+   * @param attrIndex attribute index for the attribute the histogram is being made for
+   * @param attrType class type as a string to make serialization easier
    * @param min minimum value
    * @param max maximum value
    * @tparam T the type of the attribute the stat is targeting (needs to be comparable)
    */
-  private case class MinMaxImpl[T <: Comparable[T]](attributeIndex: Int, classType: String, var min: T, var max: T) extends MinMax[T] {
+  private case class MinMaxImpl[T <: Comparable[T]](attrIndex: Int, attrType: String, var min: T, var max: T) extends MinMax[T] {
     if (min == null || max == null) {
       throw new Exception("Null min or max encountered when creating MinMax class.") // shouldn't happen, but just to be safe
     }
 
     override def observe(sf: SimpleFeature): Unit = {
-      val sfval = sf.getAttribute(attributeIndex)
+      val sfval = sf.getAttribute(attrIndex)
 
       if (sfval != null) {
         updateMin(sfval.asInstanceOf[T])

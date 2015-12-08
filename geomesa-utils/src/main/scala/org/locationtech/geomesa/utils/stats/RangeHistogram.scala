@@ -128,7 +128,8 @@ object BinHelper {
 import org.locationtech.geomesa.utils.stats.BinHelper._
 
 sealed trait RangeHistogram[T] extends Stat {
-  def attributeIndex: Int
+  def attrIndex: Int
+  def attrType: String
   def numBins: Int
   def lowerEndpoint: T
   def upperEndpoint: T
@@ -156,14 +157,14 @@ object RangeHistogram {
   /**
    * The range histogram's state is stored in a hashmap, where the keys are the bins and the values are the counts
    *
-   * @param attributeIndex attribute index for the attribute the histogram is being made for
+   * @param attrIndex attribute index for the attribute the histogram is being made for
    * @param numBins number of bins the histogram has
    * @param lowerEndpoint lower end of histogram
    * @param upperEndpoint upper end of histogram
    * @tparam T a comparable type which must have a StatHelperFunctions type class
    */
-  private case class RangeHistogramImpl[T : BinAble](attributeIndex: Int,
-                                                     attrTypeString: String,
+  private case class RangeHistogramImpl[T : BinAble](attrIndex: Int,
+                                                     attrType: String,
                                                      numBins: Int,
                                                      lowerEndpoint: T,
                                                      upperEndpoint: T) extends RangeHistogram[T] {
@@ -173,7 +174,7 @@ object RangeHistogram {
     val binSize = binHelper.getBinSize(numBins, lowerEndpoint, upperEndpoint)
 
     override def observe(sf: SimpleFeature): Unit = {
-      val sfval = sf.getAttribute(attributeIndex).asInstanceOf[T]
+      val sfval = sf.getAttribute(attrIndex).asInstanceOf[T]
 
       if (sfval != null) {
         val binIndex = binHelper.getBinIndex(sfval, binSize, lowerEndpoint, upperEndpoint)

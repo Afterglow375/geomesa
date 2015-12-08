@@ -52,8 +52,8 @@ class StatTest extends Specification {
         val stat = Stat(sft, "MinMax(dtg)")
         val minMax = stat.asInstanceOf[MinMax[Date]]
 
-        minMax.attributeIndex mustEqual dateIndex
-        minMax.classType mustEqual "java.util.Date"
+        minMax.attrIndex mustEqual dateIndex
+        minMax.attrType mustEqual "java.util.Date"
         minMax.min mustEqual new Date(java.lang.Long.MAX_VALUE)
         minMax.max mustEqual new Date(java.lang.Long.MIN_VALUE)
 
@@ -67,8 +67,8 @@ class StatTest extends Specification {
         val stat = Stat(sft, "MinMax(intAttr)")
         val minMax = stat.asInstanceOf[MinMax[java.lang.Integer]]
 
-        minMax.attributeIndex mustEqual intIndex
-        minMax.classType mustEqual "java.lang.Integer"
+        minMax.attrIndex mustEqual intIndex
+        minMax.attrType mustEqual "java.lang.Integer"
         minMax.min mustEqual java.lang.Integer.MAX_VALUE
         minMax.max mustEqual java.lang.Integer.MIN_VALUE
 
@@ -82,8 +82,8 @@ class StatTest extends Specification {
         val stat = Stat(sft, "MinMax(longAttr)")
         val minMax = stat.asInstanceOf[MinMax[java.lang.Long]]
 
-        minMax.attributeIndex mustEqual longIndex
-        minMax.classType mustEqual "java.lang.Long"
+        minMax.attrIndex mustEqual longIndex
+        minMax.attrType mustEqual "java.lang.Long"
         minMax.min mustEqual java.lang.Long.MAX_VALUE
         minMax.max mustEqual java.lang.Long.MIN_VALUE
 
@@ -97,8 +97,8 @@ class StatTest extends Specification {
         val stat = Stat(sft, "MinMax(doubleAttr)")
         val minMax = stat.asInstanceOf[MinMax[java.lang.Double]]
 
-        minMax.attributeIndex mustEqual doubleIndex
-        minMax.classType mustEqual "java.lang.Double"
+        minMax.attrIndex mustEqual doubleIndex
+        minMax.attrType mustEqual "java.lang.Double"
         minMax.min mustEqual java.lang.Double.MAX_VALUE
         minMax.max mustEqual java.lang.Double.MIN_VALUE
 
@@ -112,8 +112,8 @@ class StatTest extends Specification {
         val stat = Stat(sft, "MinMax(floatAttr)")
         val minMax = stat.asInstanceOf[MinMax[java.lang.Float]]
 
-        minMax.attributeIndex mustEqual floatIndex
-        minMax.classType mustEqual "java.lang.Float"
+        minMax.attrIndex mustEqual floatIndex
+        minMax.attrType mustEqual "java.lang.Float"
         minMax.min mustEqual java.lang.Float.MAX_VALUE
         minMax.max mustEqual java.lang.Float.MIN_VALUE
 
@@ -137,13 +137,13 @@ class StatTest extends Specification {
 
       features.foreach { stat.observe }
 
-      eh.map.size mustEqual 100.0
-      eh.map(1.0) mustEqual 1.0
+      eh.frequencyMap.size mustEqual 100.0
+      eh.frequencyMap(1.0) mustEqual 1.0
 
       features.foreach { stat.observe }
 
-      eh.map.size mustEqual 100.0
-      eh.map(1.0) mustEqual 2.0
+      eh.frequencyMap.size mustEqual 100.0
+      eh.frequencyMap(1.0) mustEqual 2.0
     }
 
     "create RangeHistogram stats for" in {
@@ -198,13 +198,13 @@ class StatTest extends Specification {
       val minMax2 = stats(1).asInstanceOf[MinMax[java.lang.Long]]
       val isc = stats(2) must beAnInstanceOf[IteratorStackCounter]
 
-      minMax1.attributeIndex mustEqual intIndex
-      minMax1.classType mustEqual "java.lang.Integer"
+      minMax1.attrIndex mustEqual intIndex
+      minMax1.attrType mustEqual "java.lang.Integer"
       minMax1.min mustEqual java.lang.Integer.MAX_VALUE
       minMax1.max mustEqual java.lang.Integer.MIN_VALUE
 
-      minMax2.attributeIndex mustEqual longIndex
-      minMax2.classType mustEqual "java.lang.Long"
+      minMax2.attrIndex mustEqual longIndex
+      minMax2.attrType mustEqual "java.lang.Long"
       minMax2.min mustEqual java.lang.Long.MAX_VALUE
       minMax2.max mustEqual java.lang.Long.MIN_VALUE
 

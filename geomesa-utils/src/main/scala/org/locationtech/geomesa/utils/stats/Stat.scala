@@ -79,12 +79,12 @@ object Stat {
       "IteratorStackCounter" ^^ { case _ => IteratorStackCounter() }
     }
 
-    def enumeratedHistogramParser[T]: Parser[EnumeratedHistogram[T]] = {
+    def enumeratedHistogramParser: Parser[EnumeratedHistogram[_]] = {
       "EnumeratedHistogram(" ~> attributeNameRegex <~ ")" ^^ {
         case attribute =>
           val attrIndex = getAttrIndex(attribute)
           val attrTypeString = sft.getType(attribute).getBinding.getName
-          EnumeratedHistogram[T](attrIndex, attrTypeString)
+          EnumeratedHistogram(attrIndex, attrTypeString)
       }
     }
 
