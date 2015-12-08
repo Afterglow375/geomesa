@@ -88,7 +88,7 @@ class StatSerializationTest extends Specification {
         seqs(0) mustEqual minMax
         seqs(1) mustEqual isc
         seqs(2) mustEqual ehDouble
-        seqs(4) mustEqual rhInteger
+        seqs(3) mustEqual rhInteger
       }
     }
   }
