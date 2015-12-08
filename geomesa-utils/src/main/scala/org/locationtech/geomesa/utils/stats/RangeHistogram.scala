@@ -139,16 +139,16 @@ object RangeHistogram {
   def apply(attrIndex: Int, attrTypeString: String, numBins: String, lowerEndpoint: String, upperEndpoint: String): RangeHistogram[_] = {
     val attrType = Class.forName(attrTypeString)
     attrType match {
-      case v if v == classOf[Date] =>
+      case _ if attrType == classOf[Date] =>
         new RangeHistogramImpl[Date](attrIndex, attrTypeString, numBins.toInt,
           StatHelpers.dateFormat.parseDateTime(lowerEndpoint).toDate, StatHelpers.dateFormat.parseDateTime(upperEndpoint).toDate)
-      case v if v == classOf[java.lang.Integer] =>
+      case _ if attrType == classOf[java.lang.Integer] =>
         new RangeHistogramImpl[java.lang.Integer](attrIndex, attrTypeString, numBins.toInt, lowerEndpoint.toInt, upperEndpoint.toInt)
-      case v if v == classOf[java.lang.Long] =>
+      case _ if attrType == classOf[java.lang.Long] =>
         new RangeHistogramImpl[java.lang.Long](attrIndex, attrTypeString, numBins.toInt, lowerEndpoint.toLong, upperEndpoint.toLong)
-      case v if v == classOf[java.lang.Double] =>
+      case _ if attrType == classOf[java.lang.Double] =>
         new RangeHistogramImpl[java.lang.Double](attrIndex, attrTypeString, numBins.toInt, lowerEndpoint.toDouble, upperEndpoint.toDouble)
-      case v if v == classOf[java.lang.Float] =>
+      case _ if attrType == classOf[java.lang.Float] =>
         new RangeHistogramImpl[java.lang.Float](attrIndex, attrTypeString, numBins.toInt, lowerEndpoint.toFloat, upperEndpoint.toFloat)
     }
   }

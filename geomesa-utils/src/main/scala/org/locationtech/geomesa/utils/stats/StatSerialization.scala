@@ -8,10 +8,13 @@
 
 package org.locationtech.geomesa.utils.stats
 
+import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
 
 import com.google.common.primitives.Bytes
 import org.locationtech.geomesa.utils.stats.StatHelpers._
+import org.apache.commons.codec.binary.Base64
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream, DataInputStream, DataOutputStream}
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -25,8 +28,8 @@ object StatSerialization {
   // bytes indicating the type of stat
   val MINMAX_BYTE: Byte           = '0'
   val ISC_BYTE: Byte              = '1'
-  val RANGE_HISTOGRAM: Byte       = '2'
-  val ENUMERATION_HISTOGRAM: Byte = '3'
+  val ENUMERATED_HISTOGRAM: Byte  = '2'
+  val RANGE_HISTOGRAM: Byte       = '3'
 
   private def serializeStat(kind: Byte, bytes: Array[Byte]): Array[Byte] = {
     val size = ByteBuffer.allocate(4).putInt(bytes.length).array
@@ -53,6 +56,21 @@ object StatSerialization {
     stat
   }
 
+  protected [stats] def packEnumeratedHistogram(eh: EnumeratedHistogram[_]): Array[Byte] = {
+    val baos = new ByteArrayOutputStream()
+    val os = new DataOutputStream(baos)
+    for((key, count) <- eh.map) {
+      os.writeBytes(key.toString)
+      os.writeLong(count)
+    }
+    os.flush()
+    serializeStat(ENUMERATED_HISTOGRAM, baos.toByteArray)
+  }
+
+//  protected [stats] def unpackEnumeratedHistogram(bytes: Array[Byte]): EnumeratedHistogram[_] = {
+//
+//  }
+
 //  protected [stats] def packRangeHistogram(rh: RangeHistogram[T]): Array[Byte] = {
 
 //  }
@@ -66,8 +84,8 @@ object StatSerialization {
     stat match {
       case mm: MinMax[_]                => packMinMax(mm)
       case isc: IteratorStackCounter    => packISC(isc)
-//      case rh: RangeHistogram[_]        => packRangeHistogram(rh)
 //      case eh: EnumeratedHistogram[_]   => packEnumerationHistogram(eh)
+//      case rh: RangeHistogram[_]        => packRangeHistogram(rh)
       case seq: SeqStat                 => Bytes.concat(seq.stats.map(pack) : _*)
     }
   }

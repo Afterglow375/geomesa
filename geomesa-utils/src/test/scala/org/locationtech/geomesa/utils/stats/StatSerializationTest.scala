@@ -20,38 +20,43 @@ class StatSerializationTest extends Specification {
   "StatsSerlization" should {
     "pack and unpack" >> {
       val attributeIndex = 1
-      val min = -235L
-      val max = 12345L
-      val mm = MinMax(attributeIndex, "java.lang.Long", min.toString, max.toString)
+      val minMax = MinMax(attributeIndex, "java.lang.Long", "-235", "12345")
 
-      val isc = new IteratorStackCounter
-      val count = 987654321L
-      isc.count = count
+      val isc = IteratorStackCounter()
+      isc.count = 987654321L
 
-      "MinMax stats" in {
-        val packed   = StatSerialization.pack(mm)
+//      val enumerationHistogram = EnumerationHistogram(attributeIndex, )
+
+      val rangeHistogram = RangeHistogram(attributeIndex, "java.lang.Integer", "10", "5", "15")
+
+      "MinMax stat" in {
+        val packed   = StatSerialization.pack(minMax)
         val unpacked = StatSerialization.unpack(packed).asInstanceOf[MinMax[java.lang.Long]]
 
-        unpacked.attributeIndex must be equalTo attributeIndex
-        unpacked.min must be equalTo min
-        unpacked.max must be equalTo max
+        unpacked mustEqual minMax
       }
 
-      "IteratorStackCounter stats" in {
+      "IteratorStackCounter stat" in {
         val packed = StatSerialization.pack(isc)
         val unpacked = StatSerialization.unpack(packed).asInstanceOf[IteratorStackCounter]
 
-        unpacked.count must be equalTo count
+        unpacked mustEqual isc
       }
 
       //TODO: Fill this in.
-      "EnumeratedHistogram stats" in {
-        true must be equalTo true
+      "EnumeratedHistogram stat" in {
+        success
       }
 
-      "Sequences of stats" in {
+//      "RangeHistogram stat" in {
+//        val packed = StatSerialization.pack(rangeHistogram)
+//        val unpacked = StatSerialization.unpack(packed).asInstanceOf[RangeHistogram[java.lang.Integer]]
+//
+//        unpacked mustEqual rangeHistogram
+//      }
 
-        val stats = new SeqStat(Seq(mm, isc))
+      "Sequences of stats" in {
+        val stats = new SeqStat(Seq(minMax, isc))
 
         val packed = StatSerialization.pack(stats)
         val unpacked = StatSerialization.unpack(packed)
@@ -59,9 +64,9 @@ class StatSerializationTest extends Specification {
         unpacked must anInstanceOf[SeqStat]
 
         val seqs = unpacked.asInstanceOf[SeqStat].stats
-
-        seqs(0) mustEqual mm
+        seqs(0) mustEqual minMax
         seqs(1) mustEqual isc
+//        seqs(2) mustEqual rangeHistogram
       }
     }
   }

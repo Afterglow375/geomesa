@@ -8,10 +8,8 @@
 
 package org.locationtech.geomesa.utils.stats
 
-import java.util.Date
-
 import org.joda.time.format.DateTimeFormat
-import org.opengis.feature.simple.{SimpleFeatureType, SimpleFeature}
+import org.opengis.feature.simple.{SimpleFeature, SimpleFeatureType}
 
 import scala.util.parsing.combinator.RegexParsers
 
@@ -78,14 +76,15 @@ object Stat {
     }
 
     def iteratorStackParser: Parser[IteratorStackCounter] = {
-      "IteratorCount" ^^ { case _ => new IteratorStackCounter() }
+      "IteratorStackCounter" ^^ { case _ => IteratorStackCounter() }
     }
 
     def enumeratedHistogramParser[T]: Parser[EnumeratedHistogram[T]] = {
       "EnumeratedHistogram(" ~> attributeNameRegex <~ ")" ^^ {
         case attribute =>
           val attrIndex = getAttrIndex(attribute)
-          new EnumeratedHistogram[T](attrIndex)
+          val attrTypeString = sft.getType(attribute).getBinding.getName
+          EnumeratedHistogram[T](attrIndex, attrTypeString)
       }
     }
 

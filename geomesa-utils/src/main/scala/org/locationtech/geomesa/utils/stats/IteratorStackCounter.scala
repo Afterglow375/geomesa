@@ -11,7 +11,7 @@ package org.locationtech.geomesa.utils.stats
 
 import org.opengis.feature.simple.SimpleFeature
 
-case class IteratorStackCounter extends Stat {
+case class IteratorStackCounter() extends Stat {
   var count: Long = 1
 
   override def observe(sf: SimpleFeature): Unit = { }

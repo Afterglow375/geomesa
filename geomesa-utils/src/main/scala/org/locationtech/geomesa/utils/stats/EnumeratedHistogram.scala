@@ -11,24 +11,24 @@ package org.locationtech.geomesa.utils.stats
 import org.opengis.feature.simple.SimpleFeature
 
 import scala.collection.mutable
+import scala.util.parsing.json.JSONObject
 
-case class EnumeratedHistogram[T](attributeIndex: Int) extends Stat {
-
-  val map: scala.collection.mutable.HashMap[T, Long] = mutable.HashMap[T, Long]()
+case class EnumeratedHistogram[T](attributeIndex: Int, attrTypeString: String) extends Stat {
+  val map: mutable.Map[T, Long] = mutable.HashMap[T, Long]().withDefaultValue(0)
 
   override def observe(sf: SimpleFeature): Unit = {
     val sfval = sf.getAttribute(attributeIndex)
-
     if (sfval != null) {
       sfval match {
         case tval: T =>
-          updateMap(tval, 1)
+          map(tval) += 1
       }
     }
   }
 
   override def toJson(): String = {
-    s"[${map.map{ case (key: T, count: Long) => s"$key:$count" }.mkString(",")}]"
+    val jsonMap = map.toMap.map { case (k, v) => k.toString -> v }
+    new JSONObject(jsonMap).toString()
   }
 
   override def add(other: Stat): Stat = {
@@ -39,13 +39,6 @@ case class EnumeratedHistogram[T](attributeIndex: Int) extends Stat {
     }
   }
 
-  private def updateMap(key: T, increment: Long) = {
-    map.get(key) match {
-      case Some(long) => map.update(key, long + increment)
-      case None       => map.update(key, increment)
-    }
-  }
-
-  private def combine(eh: EnumeratedHistogram[T]): Unit =
-    eh.map.foreach { case (key: T, count: Long) => updateMap(key, count) }
+  private def combine(other: EnumeratedHistogram[T]): Unit =
+    other.map.foreach { case (key: T, count: Long) => map(key) += count }
 }

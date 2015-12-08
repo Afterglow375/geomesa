@@ -32,40 +32,36 @@ object MinMax {
   def apply(attrIndex: Int, attrTypeString: String, min: String, max: String): MinMax[_] = {
     val attrType = Class.forName(attrTypeString)
     attrType match {
-      case v if v == classOf[Date] =>
+      case _ if attrType == classOf[Date] =>
         if (min == null && max == null) {
-          new MinMaxImpl[Date](attrIndex, attrTypeString, new Date(Long.MinValue), new Date(Long.MaxValue))
+          new MinMaxImpl[Date](attrIndex, attrTypeString, new Date(java.lang.Long.MAX_VALUE), new Date(java.lang.Long.MIN_VALUE))
         } else {
           new MinMaxImpl[Date](attrIndex, attrTypeString,
             StatHelpers.dateFormat.parseDateTime(min).toDate, StatHelpers.dateFormat.parseDateTime(max).toDate)
         }
-      case v if v == classOf[java.lang.Integer] =>
+      case _ if attrType == classOf[java.lang.Integer] =>
         if (min == null && max == null) {
-          new MinMaxImpl[java.lang.Integer](attrIndex, attrTypeString, Integer.MIN_VALUE, Integer.MAX_VALUE)
+          new MinMaxImpl[java.lang.Integer](attrIndex, attrTypeString, Integer.MAX_VALUE, Integer.MIN_VALUE)
         } else {
-          new MinMaxImpl[java.lang.Integer](attrIndex, attrTypeString,
-            java.lang.Integer.parseInt(min), java.lang.Integer.parseInt(max))
+          new MinMaxImpl[java.lang.Integer](attrIndex, attrTypeString, min.toInt, max.toInt)
         }
-      case v if v == classOf[java.lang.Long] =>
+      case _ if attrType == classOf[java.lang.Long] =>
         if (min == null && max == null) {
-          new MinMaxImpl[java.lang.Long](attrIndex, attrTypeString, java.lang.Long.MIN_VALUE, java.lang.Long.MAX_VALUE)
+          new MinMaxImpl[java.lang.Long](attrIndex, attrTypeString, java.lang.Long.MAX_VALUE, java.lang.Long.MIN_VALUE)
         } else {
-          new MinMaxImpl[java.lang.Long](attrIndex, attrTypeString,
-            java.lang.Long.parseLong(min), java.lang.Long.parseLong(max))
+          new MinMaxImpl[java.lang.Long](attrIndex, attrTypeString, min.toLong, max.toLong)
         }
-      case v if v == classOf[java.lang.Float] =>
+      case _ if attrType == classOf[java.lang.Float] =>
         if (min == null && max == null) {
-          new MinMaxImpl[java.lang.Float](attrIndex, attrTypeString, java.lang.Float.MIN_VALUE, java.lang.Float.MAX_VALUE)
+          new MinMaxImpl[java.lang.Float](attrIndex, attrTypeString, java.lang.Float.MAX_VALUE, java.lang.Float.MIN_VALUE)
         } else {
-          new MinMaxImpl[java.lang.Float](attrIndex, attrTypeString,
-            java.lang.Float.parseFloat(min), java.lang.Float.parseFloat(max))
+          new MinMaxImpl[java.lang.Float](attrIndex, attrTypeString, min.toFloat, max.toFloat)
         }
-      case v if v == classOf[java.lang.Double] =>
+      case _ if attrType == classOf[java.lang.Double] =>
         if (min == null && max == null) {
-          new MinMaxImpl[java.lang.Double](attrIndex, attrTypeString, java.lang.Double.MIN_VALUE, java.lang.Double.MAX_VALUE)
+          new MinMaxImpl[java.lang.Double](attrIndex, attrTypeString, java.lang.Double.MAX_VALUE, java.lang.Double.MIN_VALUE)
         } else {
-          new MinMaxImpl[java.lang.Double](attrIndex, attrTypeString,
-            java.lang.Double.parseDouble(min), java.lang.Double.parseDouble(max))
+          new MinMaxImpl[java.lang.Double](attrIndex, attrTypeString, min.toDouble, max.toDouble)
         }
     }
   }
@@ -87,7 +83,8 @@ object MinMax {
       val sfval = sf.getAttribute(attributeIndex)
 
       if (sfval != null) {
-        updateMinAndMax(sfval.asInstanceOf[T])
+        updateMin(sfval.asInstanceOf[T])
+        updateMax(sfval.asInstanceOf[T])
       }
     }
 
@@ -99,14 +96,6 @@ object MinMax {
       }
 
       this
-    }
-
-    private def updateMinAndMax(sfval: T): Unit = {
-      if (min.compareTo(sfval) > 0) {
-        min = sfval
-      } else if (max.compareTo(sfval) < 0) {
-        max = sfval
-      }
     }
 
     private def updateMin(sfval: T): Unit = {

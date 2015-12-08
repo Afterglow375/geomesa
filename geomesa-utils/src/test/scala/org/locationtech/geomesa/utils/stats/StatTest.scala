@@ -26,10 +26,14 @@ class StatTest extends Specification {
   val sft = SimpleFeatureTypes.createType("test", sftSpec)
   val intIndex = sft.indexOf("intAttr")
   val longIndex = sft.indexOf("longAttr")
+  val doubleIndex = sft.indexOf("doubleAttr")
+  val floatIndex = sft.indexOf("floatAttr")
+  val dateIndex = sft.indexOf("dtg")
+
   val features = (1 to 100).toArray.map {
     i => SimpleFeatureBuilder.build(sft,
-      Array("abc", i, i, i, i, "POINT(-77 38)", new DateTime(s"2012-01-01T${i%24}:00:00", DateTimeZone.UTC).toDate).asInstanceOf[Array[AnyRef]],
-      i.toString)
+      Array("abc", i, i, i, i, "POINT(-77 38)",
+        new DateTime(s"2012-01-01T${i%24}:00:00", DateTimeZone.UTC).toDate).asInstanceOf[Array[AnyRef]], i.toString)
   }
 
   "stats" should {
@@ -45,7 +49,18 @@ class StatTest extends Specification {
 
     "create MinMax stats for" in {
       "dates" in {
-        success
+        val stat = Stat(sft, "MinMax(dtg)")
+        val minMax = stat.asInstanceOf[MinMax[Date]]
+
+        minMax.attributeIndex mustEqual dateIndex
+        minMax.classType mustEqual "java.util.Date"
+        minMax.min mustEqual new Date(java.lang.Long.MAX_VALUE)
+        minMax.max mustEqual new Date(java.lang.Long.MIN_VALUE)
+
+        features.foreach { stat.observe }
+
+        minMax.min mustEqual StatHelpers.dateFormat.parseDateTime("2012-01-01T00:00:00.000Z").toDate
+        minMax.max mustEqual StatHelpers.dateFormat.parseDateTime("2012-01-01T23:00:00.000Z").toDate
       }
 
       "integers" in {
@@ -54,91 +69,154 @@ class StatTest extends Specification {
 
         minMax.attributeIndex mustEqual intIndex
         minMax.classType mustEqual "java.lang.Integer"
-        minMax.min mustEqual java.lang.Integer.MIN_VALUE
-        minMax.max mustEqual java.lang.Integer.MAX_VALUE
+        minMax.min mustEqual java.lang.Integer.MAX_VALUE
+        minMax.max mustEqual java.lang.Integer.MIN_VALUE
 
-//        features.foreach { stat.observe }
+        features.foreach { stat.observe }
 
-//        minMax.min mustEqual 1
-//        minMax.max mustEqual 100
+        minMax.min mustEqual 1
+        minMax.max mustEqual 100
       }
 
-//      "longs" in {
-//        val stat = Stat(sft, "RangeHistogram(longAttr,10,5,15)")
-//        features.foreach { stat.observe }
-//        val rh = stat.asInstanceOf[RangeHistogram[Long]]
-//        (rh.histogram must not).beNull
-//        rh.histogram.size mustEqual 10
-//      }
-//
-//      "doubles" in {
-//        val stat = Stat(sft, "RangeHistogram(doubleAttr,10,5,15)")
-//        features.foreach { stat.observe }
-//        val rh = stat.asInstanceOf[RangeHistogram[Double]]
-//        (rh.histogram must not).beNull
-//        rh.histogram.size mustEqual 10
-//      }
-//
-//      "floats" in {
-//        val stat = Stat(sft, "RangeHistogram(floatAttr,10,5,15)")
-//        features.foreach { stat.observe }
-//        val rh = stat.asInstanceOf[RangeHistogram[Float]]
-//        (rh.histogram must not).beNull
-//        rh.histogram.size mustEqual 10
-//      }
+      "longs" in {
+        val stat = Stat(sft, "MinMax(longAttr)")
+        val minMax = stat.asInstanceOf[MinMax[java.lang.Long]]
+
+        minMax.attributeIndex mustEqual longIndex
+        minMax.classType mustEqual "java.lang.Long"
+        minMax.min mustEqual java.lang.Long.MAX_VALUE
+        minMax.max mustEqual java.lang.Long.MIN_VALUE
+
+        features.foreach { stat.observe }
+
+        minMax.min mustEqual 1L
+        minMax.max mustEqual 100L
+      }
+
+      "doubles" in {
+        val stat = Stat(sft, "MinMax(doubleAttr)")
+        val minMax = stat.asInstanceOf[MinMax[java.lang.Double]]
+
+        minMax.attributeIndex mustEqual doubleIndex
+        minMax.classType mustEqual "java.lang.Double"
+        minMax.min mustEqual java.lang.Double.MAX_VALUE
+        minMax.max mustEqual java.lang.Double.MIN_VALUE
+
+        features.foreach { stat.observe }
+
+        minMax.min mustEqual 1
+        minMax.max mustEqual 100
+      }
+
+      "floats" in {
+        val stat = Stat(sft, "MinMax(floatAttr)")
+        val minMax = stat.asInstanceOf[MinMax[java.lang.Float]]
+
+        minMax.attributeIndex mustEqual floatIndex
+        minMax.classType mustEqual "java.lang.Float"
+        minMax.min mustEqual java.lang.Float.MAX_VALUE
+        minMax.max mustEqual java.lang.Float.MIN_VALUE
+
+        features.foreach { stat.observe }
+
+        minMax.min mustEqual 1
+        minMax.max mustEqual 100
+      }
+    }
+
+    "create IteratoreStackCounter stat" in {
+      val stat = Stat(sft, "IteratorStackCounter")
+      val isc = stat.asInstanceOf[IteratorStackCounter]
+
+      isc.count mustEqual 1L
+    }
+
+    "create EnumerationHistogram stat" in {
+      val stat = Stat(sft, "EnumeratedHistogram(doubleAttr)")
+      val eh = stat.asInstanceOf[EnumeratedHistogram[java.lang.Double]]
+
+      features.foreach { stat.observe }
+
+      eh.map.size mustEqual 100.0
+      eh.map(1.0) mustEqual 1.0
+
+      features.foreach { stat.observe }
+
+      eh.map.size mustEqual 100.0
+      eh.map(1.0) mustEqual 2.0
     }
 
     "create RangeHistogram stats for" in {
       "dates" in {
         val stat = Stat(sft, "RangeHistogram(dtg,12,2012-01-01T00:00:00.000Z,2012-01-01T23:00:00.000Z)")
-        features.foreach { stat.observe }
         val rh = stat.asInstanceOf[RangeHistogram[Date]]
-        (rh.histogram must not).beNull
+
+        features.foreach { stat.observe }
         rh.histogram.size mustEqual 12
       }
 
       "integers" in {
         val stat = Stat(sft, "RangeHistogram(doubleAttr,10,5,15)")
-        features.foreach { stat.observe }
         val rh = stat.asInstanceOf[RangeHistogram[java.lang.Double]]
-        (rh.histogram must not).beNull
+
+        features.foreach { stat.observe }
         rh.histogram.size mustEqual 10
       }
 
       "longs" in {
         val stat = Stat(sft, "RangeHistogram(longAttr,10,5,15)")
-        features.foreach { stat.observe }
         val rh = stat.asInstanceOf[RangeHistogram[Long]]
-        (rh.histogram must not).beNull
+
+        features.foreach { stat.observe }
         rh.histogram.size mustEqual 10
       }
 
       "doubles" in {
         val stat = Stat(sft, "RangeHistogram(doubleAttr,10,5,15)")
-        features.foreach { stat.observe }
         val rh = stat.asInstanceOf[RangeHistogram[Double]]
-        (rh.histogram must not).beNull
+
+        features.foreach { stat.observe }
         rh.histogram.size mustEqual 10
       }
 
       "floats" in {
         val stat = Stat(sft, "RangeHistogram(floatAttr,10,5,15)")
-        features.foreach { stat.observe }
         val rh = stat.asInstanceOf[RangeHistogram[Float]]
-        (rh.histogram must not).beNull
+
+        features.foreach { stat.observe }
         rh.histogram.size mustEqual 10
       }
     }
 
     "create a sequence of stats" in {
-      val stat = Stat(sft, "MinMax(intAttr);MinMax(longAttr);IteratorCount")
+      val stat = Stat(sft, "MinMax(intAttr);MinMax(longAttr);IteratorStackCounter")
       val stats = stat.asInstanceOf[SeqStat].stats
 
       stats.size mustEqual 3
 
-      stats(0).asInstanceOf[MinMax[java.lang.Integer]].attributeIndex mustEqual intIndex
-      stats(1).asInstanceOf[MinMax[java.lang.Long]].attributeIndex mustEqual longIndex
-      stats(2) must beAnInstanceOf[IteratorStackCounter]
+      val minMax1 = stats(0).asInstanceOf[MinMax[java.lang.Integer]]
+      val minMax2 = stats(1).asInstanceOf[MinMax[java.lang.Long]]
+      val isc = stats(2) must beAnInstanceOf[IteratorStackCounter]
+
+      minMax1.attributeIndex mustEqual intIndex
+      minMax1.classType mustEqual "java.lang.Integer"
+      minMax1.min mustEqual java.lang.Integer.MAX_VALUE
+      minMax1.max mustEqual java.lang.Integer.MIN_VALUE
+
+      minMax2.attributeIndex mustEqual longIndex
+      minMax2.classType mustEqual "java.lang.Long"
+      minMax2.min mustEqual java.lang.Long.MAX_VALUE
+      minMax2.max mustEqual java.lang.Long.MIN_VALUE
+
+      features.foreach { stat.observe }
+
+      minMax1.min mustEqual 1
+      minMax1.max mustEqual 100
+
+      minMax2.min mustEqual 1
+      minMax2.max mustEqual 100
+
+//      isc.count mustEqual 1
     }
   }
 }
