@@ -196,7 +196,7 @@ class StatTest extends Specification {
 
       val minMax1 = stats(0).asInstanceOf[MinMax[java.lang.Integer]]
       val minMax2 = stats(1).asInstanceOf[MinMax[java.lang.Long]]
-      val isc = stats(2) must beAnInstanceOf[IteratorStackCounter]
+      val isc = stats(2).asInstanceOf[IteratorStackCounter]
 
       minMax1.attrIndex mustEqual intIndex
       minMax1.attrType mustEqual "java.lang.Integer"
@@ -216,7 +216,7 @@ class StatTest extends Specification {
       minMax2.min mustEqual 1
       minMax2.max mustEqual 100
 
-//      isc.count mustEqual 1
+      isc.count mustEqual 1
     }
   }
 }

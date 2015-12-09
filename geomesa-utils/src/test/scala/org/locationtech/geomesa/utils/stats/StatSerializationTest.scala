@@ -17,22 +17,21 @@ class StatSerializationTest extends Specification {
 
   sequential
 
-  "StatsSerlization" should {
-    "pack and unpack" >> {
+  "StatSerialization" should {
+    "pack and unpack" in {
       val attributeIndex = 1
-      val minMax = MinMax(attributeIndex, "java.lang.Long", "-235", "12345")
+
+      val minMax = new MinMax[java.lang.Long](attributeIndex, "java.lang.Long", -235L, 12345L)
 
       val isc = IteratorStackCounter()
       isc.count = 987654321L
 
-      val ehDouble = EnumeratedHistogram(attributeIndex, "java.lang.Double")
-        .asInstanceOf[EnumeratedHistogram[java.lang.Double]]
+      val ehDouble = new EnumeratedHistogram[java.lang.Double](attributeIndex, "java.lang.Double")
       ehDouble.frequencyMap(-1.0) += 3
       ehDouble.frequencyMap(0.5) += 5
       ehDouble.frequencyMap(1.0) += 7
 
-      val rhInteger = RangeHistogram(attributeIndex, "java.lang.Integer", "10", "5", "15")
-        .asInstanceOf[RangeHistogram[java.lang.Integer]]
+      val rhInteger = new RangeHistogram[java.lang.Integer](attributeIndex, "java.lang.Integer", 10, 5, 15)
       rhInteger.histogram(-1) += 3
       rhInteger.histogram(0) += 5
       rhInteger.histogram(1) += 7

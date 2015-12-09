@@ -127,76 +127,48 @@ object BinHelper {
 
 import org.locationtech.geomesa.utils.stats.BinHelper._
 
-sealed trait RangeHistogram[T] extends Stat {
-  def attrIndex: Int
-  def attrType: String
-  def numBins: Int
-  def lowerEndpoint: T
-  def upperEndpoint: T
-  def histogram: collection.mutable.Map[T, Long]
-}
+/**
+ * The range histogram's state is stored in a hashmap, where the keys are the bins and the values are the counts
+ *
+ * @param attrIndex attribute index for the attribute the histogram is being made for
+ * @param numBins number of bins the histogram has
+ * @param lowerEndpoint lower end of histogram
+ * @param upperEndpoint upper end of histogram
+ * @tparam T a comparable type which must have a StatHelperFunctions type class
+ */
+case class RangeHistogram[T : BinAble](attrIndex: Int,
+                                       attrType: String,
+                                       numBins: Int,
+                                       lowerEndpoint: T,
+                                       upperEndpoint: T) extends Stat {
+  val histogram = new collection.mutable.HashMap[T, Long]().withDefaultValue(0)
 
-object RangeHistogram {
-  def apply(attrIndex: Int, attrTypeString: String, numBins: String, lowerEndpoint: String, upperEndpoint: String): RangeHistogram[_] = {
-    val attrType = Class.forName(attrTypeString)
-    attrType match {
-      case _ if attrType == classOf[Date] =>
-        new RangeHistogramImpl[Date](attrIndex, attrTypeString, numBins.toInt,
-          StatHelpers.dateFormat.parseDateTime(lowerEndpoint).toDate, StatHelpers.dateFormat.parseDateTime(upperEndpoint).toDate)
-      case _ if attrType == classOf[java.lang.Integer] =>
-        new RangeHistogramImpl[java.lang.Integer](attrIndex, attrTypeString, numBins.toInt, lowerEndpoint.toInt, upperEndpoint.toInt)
-      case _ if attrType == classOf[java.lang.Long] =>
-        new RangeHistogramImpl[java.lang.Long](attrIndex, attrTypeString, numBins.toInt, lowerEndpoint.toLong, upperEndpoint.toLong)
-      case _ if attrType == classOf[java.lang.Double] =>
-        new RangeHistogramImpl[java.lang.Double](attrIndex, attrTypeString, numBins.toInt, lowerEndpoint.toDouble, upperEndpoint.toDouble)
-      case _ if attrType == classOf[java.lang.Float] =>
-        new RangeHistogramImpl[java.lang.Float](attrIndex, attrTypeString, numBins.toInt, lowerEndpoint.toFloat, upperEndpoint.toFloat)
+  val binHelper = implicitly[BinAble[T]]
+  val binSize = binHelper.getBinSize(numBins, lowerEndpoint, upperEndpoint)
+
+  override def observe(sf: SimpleFeature): Unit = {
+    val sfval = sf.getAttribute(attrIndex).asInstanceOf[T]
+
+    if (sfval != null) {
+      val binIndex = binHelper.getBinIndex(sfval, binSize, lowerEndpoint, upperEndpoint)
+      histogram(binIndex) += 1
     }
   }
 
-  /**
-   * The range histogram's state is stored in a hashmap, where the keys are the bins and the values are the counts
-   *
-   * @param attrIndex attribute index for the attribute the histogram is being made for
-   * @param numBins number of bins the histogram has
-   * @param lowerEndpoint lower end of histogram
-   * @param upperEndpoint upper end of histogram
-   * @tparam T a comparable type which must have a StatHelperFunctions type class
-   */
-  private case class RangeHistogramImpl[T : BinAble](attrIndex: Int,
-                                                     attrType: String,
-                                                     numBins: Int,
-                                                     lowerEndpoint: T,
-                                                     upperEndpoint: T) extends RangeHistogram[T] {
-    override lazy val histogram = new collection.mutable.HashMap[T, Long]().withDefaultValue(0)
+  override def toJson(): String = {
+    val jsonMap = histogram.toMap.map { case (k, v) => k.toString -> v }
+    new JSONObject(jsonMap).toString()
+  }
 
-    val binHelper = implicitly[BinAble[T]]
-    val binSize = binHelper.getBinSize(numBins, lowerEndpoint, upperEndpoint)
-
-    override def observe(sf: SimpleFeature): Unit = {
-      val sfval = sf.getAttribute(attrIndex).asInstanceOf[T]
-
-      if (sfval != null) {
-        val binIndex = binHelper.getBinIndex(sfval, binSize, lowerEndpoint, upperEndpoint)
-        histogram(binIndex) += 1
-      }
+  override def add(other: Stat): Stat = {
+    other match {
+      case rangeHistogram: RangeHistogram[T] =>
+        for (key <- rangeHistogram.histogram.keySet) {
+          histogram(key) += rangeHistogram.histogram.get(key).get
+        }
     }
 
-    override def toJson(): String = {
-      val jsonMap = histogram.toMap.map { case (k, v) => k.toString -> v }
-      new JSONObject(jsonMap).toString()
-    }
-
-    override def add(other: Stat): Stat = {
-      other match {
-        case rangeHistogram: RangeHistogram[T] =>
-          for (key <- rangeHistogram.histogram.keySet) {
-            histogram(key) += rangeHistogram.histogram.get(key).get
-          }
-      }
-
-      this
-    }
+    this
   }
 }
 

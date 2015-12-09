@@ -40,7 +40,26 @@ object StatSerialization {
   protected [stats] def unpackMinMax(bytes: Array[Byte]): MinMax[_] = {
     val split = new String(bytes).split(";")
     require(split.size == 4)
-    MinMax(java.lang.Integer.parseInt(split(0)), split(1), split(2), split(3))
+
+    val attrIndex = split(0).toInt
+    val attrTypeString = split(1)
+    val min = split(2)
+    val max = split(3)
+
+    val attrType = Class.forName(attrTypeString)
+    attrType match {
+      case _ if attrType == classOf[Date] =>
+        new MinMax[Date](attrIndex, attrTypeString,
+          StatHelpers.dateFormat.parseDateTime(min).toDate, StatHelpers.dateFormat.parseDateTime(max).toDate)
+      case _ if attrType == classOf[java.lang.Integer] =>
+        new MinMax[java.lang.Integer](attrIndex, attrTypeString, min.toInt, max.toInt)
+      case _ if attrType == classOf[java.lang.Long] =>
+        new MinMax[java.lang.Long](attrIndex, attrTypeString, min.toLong, max.toLong)
+      case _ if attrType == classOf[java.lang.Float] =>
+        new MinMax[java.lang.Float](attrIndex, attrTypeString, min.toFloat, max.toFloat)
+      case _ if attrType == classOf[java.lang.Double] =>
+        new MinMax[java.lang.Double](attrIndex, attrTypeString, min.toDouble, max.toDouble)
+    }
   }
 
   protected [stats] def packISC(isc: IteratorStackCounter): Array[Byte] = {
@@ -73,7 +92,7 @@ object StatSerialization {
     val attrType = Class.forName(attrTypeString)
     attrType match {
       case _ if attrType == classOf[Date] =>
-        val eh = EnumeratedHistogram(attrIndex, attrTypeString).asInstanceOf[EnumeratedHistogram[Date]]
+        val eh = new EnumeratedHistogram[Date](attrIndex, attrTypeString)
         keyValues.foreach {
           case (keyValuePair) =>
             val splitKeyValuePair = keyValuePair.split("->")
@@ -81,7 +100,7 @@ object StatSerialization {
         }
         eh
       case _ if attrType == classOf[Integer] =>
-        val eh = EnumeratedHistogram(attrIndex, attrTypeString).asInstanceOf[EnumeratedHistogram[Integer]]
+        val eh = new EnumeratedHistogram[Integer](attrIndex, attrTypeString)
         keyValues.foreach {
           case (keyValuePair) =>
             val splitKeyValuePair = keyValuePair.split("->")
@@ -89,7 +108,7 @@ object StatSerialization {
         }
         eh
       case _ if attrType == classOf[java.lang.Long] =>
-        val eh = EnumeratedHistogram(attrIndex, attrTypeString).asInstanceOf[EnumeratedHistogram[java.lang.Long]]
+        val eh = new EnumeratedHistogram[java.lang.Long](attrIndex, attrTypeString)
         keyValues.foreach {
           case (keyValuePair) =>
             val splitKeyValuePair = keyValuePair.split("->")
@@ -97,7 +116,7 @@ object StatSerialization {
         }
         eh
       case _ if attrType == classOf[java.lang.Float] =>
-        val eh = EnumeratedHistogram(attrIndex, attrTypeString).asInstanceOf[EnumeratedHistogram[java.lang.Float]]
+        val eh = new EnumeratedHistogram[java.lang.Float](attrIndex, attrTypeString)
         keyValues.foreach {
           case (keyValuePair) =>
             val splitKeyValuePair = keyValuePair.split("->")
@@ -105,7 +124,7 @@ object StatSerialization {
         }
         eh
       case _ if attrType == classOf[java.lang.Double] =>
-        val eh = EnumeratedHistogram(attrIndex, attrTypeString).asInstanceOf[EnumeratedHistogram[java.lang.Double]]
+        val eh = new EnumeratedHistogram[java.lang.Double](attrIndex, attrTypeString)
         keyValues.foreach {
           case (keyValuePair) =>
             val splitKeyValuePair = keyValuePair.split("->")
@@ -138,7 +157,8 @@ object StatSerialization {
     val attrType = Class.forName(attrTypeString)
     attrType match {
       case _ if attrType == classOf[Date] =>
-        val rh = RangeHistogram(attrIndex, attrTypeString, numBins, lowerEndpoint, upperEndpoint).asInstanceOf[RangeHistogram[Date]]
+        val rh = new RangeHistogram[Date](attrIndex, attrTypeString, numBins.toInt,
+          StatHelpers.dateFormat.parseDateTime(lowerEndpoint).toDate, StatHelpers.dateFormat.parseDateTime(upperEndpoint).toDate)
         keyValues.foreach {
           case (keyValuePair) =>
             val splitKeyValuePair = keyValuePair.split("->")
@@ -146,7 +166,7 @@ object StatSerialization {
         }
         rh
       case _ if attrType == classOf[Integer] =>
-        val rh = RangeHistogram(attrIndex, attrTypeString, numBins, lowerEndpoint, upperEndpoint).asInstanceOf[RangeHistogram[Integer]]
+        val rh = new RangeHistogram[Integer](attrIndex, attrTypeString, numBins.toInt, lowerEndpoint.toInt, upperEndpoint.toInt)
         keyValues.foreach {
           case (keyValuePair) =>
             val splitKeyValuePair = keyValuePair.split("->")
@@ -154,7 +174,7 @@ object StatSerialization {
         }
         rh
       case _ if attrType == classOf[java.lang.Long] =>
-        val rh = RangeHistogram(attrIndex, attrTypeString, numBins, lowerEndpoint, upperEndpoint).asInstanceOf[RangeHistogram[java.lang.Long]]
+        val rh = new RangeHistogram[java.lang.Long](attrIndex, attrTypeString, numBins.toInt, lowerEndpoint.toLong, upperEndpoint.toLong)
         keyValues.foreach {
           case (keyValuePair) =>
             val splitKeyValuePair = keyValuePair.split("->")
@@ -162,7 +182,7 @@ object StatSerialization {
         }
         rh
       case _ if attrType == classOf[java.lang.Float] =>
-        val rh = RangeHistogram(attrIndex, attrTypeString, numBins, lowerEndpoint, upperEndpoint).asInstanceOf[RangeHistogram[java.lang.Float]]
+        val rh = new RangeHistogram[java.lang.Float](attrIndex, attrTypeString, numBins.toInt, lowerEndpoint.toFloat, upperEndpoint.toFloat)
         keyValues.foreach {
           case (keyValuePair) =>
             val splitKeyValuePair = keyValuePair.split("->")
@@ -170,7 +190,7 @@ object StatSerialization {
         }
         rh
       case _ if attrType == classOf[java.lang.Double] =>
-        val rh = RangeHistogram(attrIndex, attrTypeString, numBins, lowerEndpoint, upperEndpoint).asInstanceOf[RangeHistogram[java.lang.Double]]
+        val rh = new RangeHistogram[java.lang.Double](attrIndex, attrTypeString, numBins.toInt, lowerEndpoint.toDouble, upperEndpoint.toDouble)
         keyValues.foreach {
           case (keyValuePair) =>
             val splitKeyValuePair = keyValuePair.split("->")

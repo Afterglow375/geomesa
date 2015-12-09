@@ -8,6 +8,8 @@
 
 package org.locationtech.geomesa.utils.stats
 
+import java.util.Date
+
 import org.joda.time.format.DateTimeFormat
 import org.opengis.feature.simple.{SimpleFeature, SimpleFeatureType}
 
@@ -70,8 +72,20 @@ object Stat {
       "MinMax(" ~> attributeNameRegex <~ ")" ^^ {
         case attribute =>
           val attrIndex = getAttrIndex(attribute)
-          val attrTypeString = sft.getType(attribute).getBinding.getName
-          MinMax(attrIndex, attrTypeString, null, null)
+          val attrType = sft.getType(attribute).getBinding
+          val attrTypeString = attrType.getName
+          attrType match {
+            case _ if attrType == classOf[Date] =>
+              new MinMax[Date](attrIndex, attrTypeString, new Date(java.lang.Long.MAX_VALUE), new Date(java.lang.Long.MIN_VALUE))
+            case _ if attrType == classOf[java.lang.Integer] =>
+              new MinMax[java.lang.Integer](attrIndex, attrTypeString, Integer.MAX_VALUE, Integer.MIN_VALUE)
+            case _ if attrType == classOf[java.lang.Long] =>
+              new MinMax[java.lang.Long](attrIndex, attrTypeString, java.lang.Long.MAX_VALUE, java.lang.Long.MIN_VALUE)
+            case _ if attrType == classOf[java.lang.Float] =>
+              new MinMax[java.lang.Float](attrIndex, attrTypeString, java.lang.Float.MAX_VALUE, java.lang.Float.MIN_VALUE)
+            case _ if attrType == classOf[java.lang.Double] =>
+              new MinMax[java.lang.Double](attrIndex, attrTypeString, java.lang.Double.MAX_VALUE, java.lang.Double.MIN_VALUE)
+          }
       }
     }
 
@@ -83,8 +97,20 @@ object Stat {
       "EnumeratedHistogram(" ~> attributeNameRegex <~ ")" ^^ {
         case attribute =>
           val attrIndex = getAttrIndex(attribute)
-          val attrTypeString = sft.getType(attribute).getBinding.getName
-          EnumeratedHistogram(attrIndex, attrTypeString)
+          val attrType = sft.getType(attribute).getBinding
+          val attrTypeString = attrType.getName
+          attrType match {
+            case _ if attrType == classOf[Date] =>
+              new EnumeratedHistogram[Date](attrIndex, attrTypeString)
+            case _ if attrType == classOf[java.lang.Integer] =>
+              new EnumeratedHistogram[java.lang.Integer](attrIndex, attrTypeString)
+            case _ if attrType == classOf[java.lang.Long] =>
+              new EnumeratedHistogram[java.lang.Long](attrIndex, attrTypeString)
+            case _ if attrType == classOf[java.lang.Float] =>
+              new EnumeratedHistogram[java.lang.Float](attrIndex, attrTypeString)
+            case _ if attrType == classOf[java.lang.Double] =>
+              new EnumeratedHistogram[java.lang.Double](attrIndex, attrTypeString)
+          }
       }
     }
 
@@ -92,8 +118,21 @@ object Stat {
       "RangeHistogram(" ~> attributeNameRegex ~ "," ~ numBinRegex ~ "," ~ nonEmptyRegex ~ "," ~ nonEmptyRegex <~ ")" ^^ {
         case attribute ~ "," ~ numBins ~ "," ~ lowerEndpoint ~ "," ~ upperEndpoint =>
           val attrIndex = getAttrIndex(attribute)
-          val attrTypeString = sft.getType(attribute).getBinding.getName
-          RangeHistogram(attrIndex, attrTypeString, numBins, lowerEndpoint, upperEndpoint)
+          val attrType = sft.getType(attribute).getBinding
+          val attrTypeString = attrType.getName
+          attrType match {
+            case _ if attrType == classOf[Date] =>
+              new RangeHistogram[Date](attrIndex, attrTypeString, numBins.toInt,
+                StatHelpers.dateFormat.parseDateTime(lowerEndpoint).toDate, StatHelpers.dateFormat.parseDateTime(upperEndpoint).toDate)
+            case _ if attrType == classOf[java.lang.Integer] =>
+              new RangeHistogram[java.lang.Integer](attrIndex, attrTypeString, numBins.toInt, lowerEndpoint.toInt, upperEndpoint.toInt)
+            case _ if attrType == classOf[java.lang.Long] =>
+              new RangeHistogram[java.lang.Long](attrIndex, attrTypeString, numBins.toInt, lowerEndpoint.toLong, upperEndpoint.toLong)
+            case _ if attrType == classOf[java.lang.Double] =>
+              new RangeHistogram[java.lang.Double](attrIndex, attrTypeString, numBins.toInt, lowerEndpoint.toDouble, upperEndpoint.toDouble)
+            case _ if attrType == classOf[java.lang.Float] =>
+              new RangeHistogram[java.lang.Float](attrIndex, attrTypeString, numBins.toInt, lowerEndpoint.toFloat, upperEndpoint.toFloat)
+          }
       }
     }
 
