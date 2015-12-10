@@ -21,7 +21,7 @@ class StatSerializationTest extends Specification {
     "pack and unpack" in {
       val attributeIndex = 1
 
-      val minMax = new MinMax[java.lang.Long](attributeIndex, "java.lang.Long", -235L, 12345L)
+      val minMaxLong = new MinMax[java.lang.Long](attributeIndex, "java.lang.Long", -235L, 12345L)
 
       val isc = IteratorStackCounter()
       isc.count = 987654321L
@@ -37,10 +37,10 @@ class StatSerializationTest extends Specification {
       rhInteger.histogram(1) += 7
 
       "MinMax stat" in {
-        val packed   = StatSerialization.pack(minMax)
+        val packed   = StatSerialization.pack(minMaxLong)
         val unpacked = StatSerialization.unpack(packed).asInstanceOf[MinMax[java.lang.Long]]
 
-        unpacked mustEqual minMax
+        unpacked mustEqual minMaxLong
       }
 
       "IteratorStackCounter stat" in {
@@ -75,7 +75,7 @@ class StatSerializationTest extends Specification {
       }
 
       "Sequences of stats" in {
-        val stats = new SeqStat(Seq(minMax, isc, ehDouble, rhInteger))
+        val stats = new SeqStat(Seq(minMaxLong, isc, ehDouble, rhInteger))
 
         val packed = StatSerialization.pack(stats)
         val unpacked = StatSerialization.unpack(packed)
@@ -84,7 +84,7 @@ class StatSerializationTest extends Specification {
 
         val seqs = unpacked.asInstanceOf[SeqStat].stats
         seqs.size mustEqual 4
-        seqs(0) mustEqual minMax
+        seqs(0) mustEqual minMaxLong
         seqs(1) mustEqual isc
         seqs(2) mustEqual ehDouble
         seqs(3) mustEqual rhInteger

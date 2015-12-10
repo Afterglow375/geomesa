@@ -85,6 +85,8 @@ object Stat {
               new MinMax[java.lang.Float](attrIndex, attrTypeString, java.lang.Float.MAX_VALUE, java.lang.Float.MIN_VALUE)
             case _ if attrType == classOf[java.lang.Double] =>
               new MinMax[java.lang.Double](attrIndex, attrTypeString, java.lang.Double.MAX_VALUE, java.lang.Double.MIN_VALUE)
+            case _ =>
+              throw new Exception(s"Cannot create stat for invalid type: $attrType for attribute: $attribute")
           }
       }
     }
@@ -110,6 +112,8 @@ object Stat {
               new EnumeratedHistogram[java.lang.Float](attrIndex, attrTypeString)
             case _ if attrType == classOf[java.lang.Double] =>
               new EnumeratedHistogram[java.lang.Double](attrIndex, attrTypeString)
+            case _ =>
+              throw new Exception(s"Cannot create stat for invalid type: $attrType for attribute: $attribute")
           }
       }
     }
@@ -132,6 +136,8 @@ object Stat {
               new RangeHistogram[java.lang.Double](attrIndex, attrTypeString, numBins.toInt, lowerEndpoint.toDouble, upperEndpoint.toDouble)
             case _ if attrType == classOf[java.lang.Float] =>
               new RangeHistogram[java.lang.Float](attrIndex, attrTypeString, numBins.toInt, lowerEndpoint.toFloat, upperEndpoint.toFloat)
+            case _ =>
+              throw new Exception(s"Cannot create stat for invalid type: $attrType for attribute: $attribute")
           }
       }
     }

@@ -20,27 +20,33 @@ import scala.util.parsing.json.JSONObject
  */
 object BinHelper {
   trait BinAble[T] {
-    def getBinSize(numBins: Int, lowerEndpoint: T, upperEndpoint: T): T
-    def getBinIndex(attributeValue: T, binSize: T, lowerEndpoint: T, upperEndpoint: T): T
+    def getBinSize(numBins: Int, lowerEndpoint: T, upperEndpoint: T): Double
+    def getBinIndex(attributeValue: T, binSize: Double, numBins: Int, lowerEndpoint: T, upperEndpoint: T): T
+    def getBinKey(binSize: Double, bucketIndex: Int, lowerEndpoint: T): T
   }
 
   implicit object BinAbleDate extends BinAble[Date] {
-    override def getBinSize(numBins: Int, lowerEndpoint: Date, upperEndpoint: Date): Date = {
-      new Date((upperEndpoint.getTime - lowerEndpoint.getTime) / numBins)
+    override def getBinSize(numBins: Int, lowerEndpoint: Date, upperEndpoint: Date): Double = {
+      (upperEndpoint.getTime - lowerEndpoint.getTime / numBins).toDouble
     }
 
     override def getBinIndex(attributeValue: Date,
-                             binSize: Date,
+                             binSize: Double,
+                             numBins: Int,
                              lowerEndpoint: Date,
                              upperEndpoint: Date): Date = {
       if (attributeValue.getTime >= upperEndpoint.getTime) {
-        new Date(upperEndpoint.getTime - binSize.getTime)
+        getBinKey(binSize, numBins - 1, lowerEndpoint)
       } else if (attributeValue.getTime <= lowerEndpoint.getTime) {
         lowerEndpoint
       } else {
-        val bucketIndex = (attributeValue.getTime - lowerEndpoint.getTime) / binSize.getTime
-        new Date(lowerEndpoint.getTime + (binSize.getTime * bucketIndex))
+        val bucketIndex = (attributeValue.getTime - lowerEndpoint.getTime) / binSize
+        getBinKey(binSize, bucketIndex.toInt, lowerEndpoint)
       }
+    }
+
+    override def getBinKey(binSize: Double, bucketIndex: Int, lowerEndpoint: Date): Date = {
+      new Date(lowerEndpoint.getTime + (binSize * bucketIndex))
     }
   }
 
@@ -59,8 +65,12 @@ object BinHelper {
         lowerEndpoint
       } else {
         val bucketIndex = (attributeValue - lowerEndpoint) / binSize
-        lowerEndpoint + (binSize * bucketIndex)
+        getBinKey(binSize, bucketIndex.toInt, lowerEndpoint)
       }
+    }
+
+    override def getBinKey(binSize: lang.Long, bucketIndex: Int, lowerEndpoint: lang.Long): lang.Long = {
+      lowerEndpoint + (binSize * bucketIndex)
     }
   }
 
@@ -79,8 +89,12 @@ object BinHelper {
         lowerEndpoint
       } else {
         val bucketIndex = (attributeValue - lowerEndpoint) / binSize
-        lowerEndpoint + (binSize * bucketIndex)
+        getBinKey(binSize, bucketIndex.toInt, lowerEndpoint)
       }
+    }
+
+    override def getBinKey(binSize: lang.Integer, bucketIndex: Int, lowerEndpoint: lang.Integer): lang.Integer = {
+      lowerEndpoint + (binSize * bucketIndex)
     }
   }
 
@@ -99,8 +113,12 @@ object BinHelper {
         lowerEndpoint
       } else {
         val bucketIndex = (attributeValue - lowerEndpoint) / binSize
-        lowerEndpoint + (binSize * bucketIndex)
+        getBinKey(binSize, bucketIndex.toInt, lowerEndpoint)
       }
+    }
+
+    override def getBinKey(binSize: lang.Double, bucketIndex: Int, lowerEndpoint: lang.Double): lang.Double = {
+      lowerEndpoint + (binSize * bucketIndex)
     }
   }
 
@@ -119,8 +137,12 @@ object BinHelper {
         lowerEndpoint
       } else {
         val bucketIndex = (attributeValue - lowerEndpoint) / binSize
-        lowerEndpoint + (binSize * bucketIndex)
+        getBinKey(binSize, bucketIndex.toInt, lowerEndpoint)
       }
+    }
+
+    override def getBinKey(binSize: lang.Float, bucketIndex: Int, lowerEndpoint: lang.Float): lang.Float = {
+      lowerEndpoint + (binSize * bucketIndex)
     }
   }
 }
@@ -141,10 +163,14 @@ case class RangeHistogram[T : BinAble](attrIndex: Int,
                                        numBins: Int,
                                        lowerEndpoint: T,
                                        upperEndpoint: T) extends Stat {
-  val histogram = new collection.mutable.HashMap[T, Long]().withDefaultValue(0)
+  val histogram = new collection.mutable.HashMap[T, Long]()
 
   val binHelper = implicitly[BinAble[T]]
   val binSize = binHelper.getBinSize(numBins, lowerEndpoint, upperEndpoint)
+
+  for (i <- numBins) {
+    histogram.put(binHelper.getBinKey(binSize, i, lowerEndpoint), 0)
+  }
 
   override def observe(sf: SimpleFeature): Unit = {
     val sfval = sf.getAttribute(attrIndex).asInstanceOf[T]

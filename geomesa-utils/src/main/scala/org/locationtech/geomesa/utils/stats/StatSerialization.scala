@@ -50,7 +50,7 @@ object StatSerialization {
     attrType match {
       case _ if attrType == classOf[Date] =>
         new MinMax[Date](attrIndex, attrTypeString,
-          StatHelpers.dateFormat.parseDateTime(min).toDate, StatHelpers.dateFormat.parseDateTime(max).toDate)
+          StatHelpers.javaDateFormat.parse(min), StatHelpers.javaDateFormat.parse(max))
       case _ if attrType == classOf[java.lang.Integer] =>
         new MinMax[java.lang.Integer](attrIndex, attrTypeString, min.toInt, max.toInt)
       case _ if attrType == classOf[java.lang.Long] =>
@@ -96,7 +96,7 @@ object StatSerialization {
         keyValues.foreach {
           case (keyValuePair) =>
             val splitKeyValuePair = keyValuePair.split("->")
-            eh.frequencyMap.put(StatHelpers.dateFormat.parseDateTime(splitKeyValuePair(0)).toDate, splitKeyValuePair(1).toLong)
+            eh.frequencyMap.put(StatHelpers.javaDateFormat.parse(splitKeyValuePair(0)), splitKeyValuePair(1).toLong)
         }
         eh
       case _ if attrType == classOf[Integer] =>
@@ -162,7 +162,7 @@ object StatSerialization {
         keyValues.foreach {
           case (keyValuePair) =>
             val splitKeyValuePair = keyValuePair.split("->")
-            rh.histogram.put(StatHelpers.dateFormat.parseDateTime(splitKeyValuePair(0)).toDate, splitKeyValuePair(1).toLong)
+            rh.histogram.put(StatHelpers.javaDateFormat.parse(splitKeyValuePair(0)), splitKeyValuePair(1).toLong)
         }
         rh
       case _ if attrType == classOf[Integer] =>
@@ -208,7 +208,6 @@ object StatSerialization {
   def pack(stat: Stat): Array[Byte] = {
     stat match {
       case mm: MinMax[_]                => packMinMax(mm)
-      case isc: IteratorStackCounter    => packISC(isc)
       case isc: IteratorStackCounter    => packISC(isc)
       case eh: EnumeratedHistogram[_]   => packEnumeratedHistogram(eh)
       case rh: RangeHistogram[_]        => packRangeHistogram(rh)
