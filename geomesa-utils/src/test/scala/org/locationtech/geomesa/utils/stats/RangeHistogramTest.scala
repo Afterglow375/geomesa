@@ -36,6 +36,7 @@ class RangeHistogramTest extends Specification with StatTestHelper {
           val unpacked = StatSerialization.unpack(packed).asInstanceOf[RangeHistogram[Date]]
 
           unpacked mustEqual rh
+          unpacked.histogram mustEqual rh.histogram
         }
 
         "combine two RangeHistograms" in {
@@ -76,6 +77,7 @@ class RangeHistogramTest extends Specification with StatTestHelper {
           val unpacked = StatSerialization.unpack(packed).asInstanceOf[RangeHistogram[java.lang.Integer]]
 
           unpacked mustEqual rh
+          unpacked.histogram mustEqual rh.histogram
         }
 
         "combine two RangeHistograms" in {
@@ -118,6 +120,7 @@ class RangeHistogramTest extends Specification with StatTestHelper {
           val unpacked = StatSerialization.unpack(packed).asInstanceOf[RangeHistogram[java.lang.Long]]
 
           unpacked mustEqual rh
+          unpacked.histogram mustEqual rh.histogram
         }
 
         "combine two RangeHistograms" in {
@@ -143,38 +146,98 @@ class RangeHistogramTest extends Specification with StatTestHelper {
           rh2.histogram(upperEndpoint) mustEqual 9L
         }
       }
-//
-//      "doubles" in {
-//        val stat = Stat(sft, "RangeHistogram(doubleAttr,10,5,15)")
-//        val rh = stat.asInstanceOf[RangeHistogram[java.lang.Double]]
-//
-//        features.foreach { stat.observe }
-//        rh.histogram.size mustEqual 10
-//
-//        "serialize and deserialize" in {
-//
-//        }
-//
-//        "combine two RangeHistograms" in {
-//
-//        }
-//      }
-//
-//      "floats" in {
-//        val stat = Stat(sft, "RangeHistogram(floatAttr,10,5,15)")
-//        val rh = stat.asInstanceOf[RangeHistogram[java.lang.Float]]
-//
-//        features.foreach { stat.observe }
-//        rh.histogram.size mustEqual 10
-//
-//        "serialize and deserialize" in {
-//
-//        }
-//
-//        "combine two RangeHistograms" in {
-//
-//        }
-//      }
+
+      "doubles" in {
+        val stat = Stat(sft, "RangeHistogram(doubleAttr,7,90,110)")
+        val rh = stat.asInstanceOf[RangeHistogram[java.lang.Double]]
+        val lowerEndpoint = 90.0
+        val midpoint = 98.57142857142857
+        val upperEndpoint = 107.14285714285714
+
+        features.foreach { stat.observe }
+
+        rh.histogram.size mustEqual 7
+        rh.histogram(lowerEndpoint) mustEqual 3
+        rh.histogram(midpoint) mustEqual 1
+        rh.histogram(upperEndpoint) mustEqual 0
+
+        "serialize and deserialize" in {
+          val packed   = StatSerialization.pack(rh)
+          val unpacked = StatSerialization.unpack(packed).asInstanceOf[RangeHistogram[java.lang.Double]]
+
+          unpacked mustEqual rh
+          unpacked.histogram mustEqual rh.histogram
+        }
+
+        "combine two RangeHistograms" in {
+          val stat2 = Stat(sft, "RangeHistogram(doubleAttr,7,90,110)")
+          val rh2 = stat2.asInstanceOf[RangeHistogram[java.lang.Double]]
+
+          features2.foreach { stat2.observe }
+
+          rh2.histogram.size mustEqual 7
+          rh2.histogram(lowerEndpoint) mustEqual 0
+          rh2.histogram(midpoint) mustEqual 2
+          rh2.histogram(upperEndpoint) mustEqual 3
+
+          stat.add(stat2)
+
+          rh.histogram.size mustEqual 7
+          rh.histogram(lowerEndpoint) mustEqual 3
+          rh.histogram(midpoint) mustEqual 3
+          rh.histogram(upperEndpoint) mustEqual 3
+          rh2.histogram.size mustEqual 7
+          rh2.histogram(lowerEndpoint) mustEqual 0
+          rh2.histogram(midpoint) mustEqual 2
+          rh2.histogram(upperEndpoint) mustEqual 3
+        }
+      }
+
+      "floats" in {
+        val stat = Stat(sft, "RangeHistogram(floatAttr,7,90,110)")
+        val rh = stat.asInstanceOf[RangeHistogram[java.lang.Float]]
+        val lowerEndpoint = 90.0f
+        val midpoint = 98.57143f
+        val upperEndpoint = 107.14285f
+
+        features.foreach { stat.observe }
+
+        rh.histogram.size mustEqual 7
+        rh.histogram(lowerEndpoint) mustEqual 3
+        rh.histogram(midpoint) mustEqual 1
+        rh.histogram(upperEndpoint) mustEqual 0
+
+        "serialize and deserialize" in {
+          val packed   = StatSerialization.pack(rh)
+          val unpacked = StatSerialization.unpack(packed).asInstanceOf[RangeHistogram[java.lang.Float]]
+
+          unpacked mustEqual rh
+          unpacked.histogram mustEqual rh.histogram
+        }
+
+        "combine two RangeHistograms" in {
+          val stat2 = Stat(sft, "RangeHistogram(floatAttr,7,90,110)")
+          val rh2 = stat2.asInstanceOf[RangeHistogram[java.lang.Float]]
+
+          features2.foreach { stat2.observe }
+
+          rh2.histogram.size mustEqual 7
+          rh2.histogram(lowerEndpoint) mustEqual 0
+          rh2.histogram(midpoint) mustEqual 2
+          rh2.histogram(upperEndpoint) mustEqual 3
+
+          stat.add(stat2)
+
+          rh.histogram.size mustEqual 7
+          rh.histogram(lowerEndpoint) mustEqual 3
+          rh.histogram(midpoint) mustEqual 3
+          rh.histogram(upperEndpoint) mustEqual 3
+          rh2.histogram.size mustEqual 7
+          rh2.histogram(lowerEndpoint) mustEqual 0
+          rh2.histogram(midpoint) mustEqual 2
+          rh2.histogram(upperEndpoint) mustEqual 3
+        }
+      }
     }
   }
 }
