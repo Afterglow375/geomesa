@@ -31,7 +31,7 @@ class StatSerializationTest extends Specification {
       ehDouble.frequencyMap(0.5) += 5
       ehDouble.frequencyMap(1.0) += 7
 
-      val rhInteger = new RangeHistogram[java.lang.Integer](attributeIndex, "java.lang.Integer", 10, 5, 15)
+      val rhInteger = new RangeHistogram[java.lang.Integer](attributeIndex, "java.lang.Integer", 10, -5, 10)
       rhInteger.histogram(-1) += 3
       rhInteger.histogram(0) += 5
       rhInteger.histogram(1) += 7
@@ -56,7 +56,6 @@ class StatSerializationTest extends Specification {
 
         unpacked.frequencyMap.size mustEqual ehDouble.frequencyMap.size
         unpacked.frequencyMap(-1.0) mustEqual ehDouble.frequencyMap(-1.0)
-        unpacked.frequencyMap(0.0) mustEqual ehDouble.frequencyMap(0.0)
         unpacked.frequencyMap(0.5) mustEqual ehDouble.frequencyMap(0.5)
         unpacked.frequencyMap(1.0) mustEqual ehDouble.frequencyMap(1.0)
         unpacked mustEqual ehDouble

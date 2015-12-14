@@ -20,33 +20,34 @@ import scala.util.parsing.json.JSONObject
  */
 object BinHelper {
   trait BinAble[T] {
-    def getBinSize(numBins: Int, lowerEndpoint: T, upperEndpoint: T): Double
-    def getBinIndex(attributeValue: T, binSize: Double, numBins: Int, lowerEndpoint: T, upperEndpoint: T): T
-    def getBinKey(binSize: Double, bucketIndex: Int, lowerEndpoint: T): T
+    def getBinSize(numBins: Int, lowerEndpoint: T, upperEndpoint: T): T
+    def getBinIndex(attributeValue: T, binSize: T, numBins: Int, lowerEndpoint: T, upperEndpoint: T): T
+    def getBinKey(binSize: T, bucketIndex: Int, lowerEndpoint: T): T
   }
 
   implicit object BinAbleDate extends BinAble[Date] {
-    override def getBinSize(numBins: Int, lowerEndpoint: Date, upperEndpoint: Date): Double = {
-      (upperEndpoint.getTime - lowerEndpoint.getTime / numBins).toDouble
+    override def getBinSize(numBins: Int, lowerEndpoint: Date, upperEndpoint: Date): Date = {
+      new Date((upperEndpoint.getTime - lowerEndpoint.getTime) / numBins)
     }
 
     override def getBinIndex(attributeValue: Date,
-                             binSize: Double,
+                             binSize: Date,
                              numBins: Int,
                              lowerEndpoint: Date,
                              upperEndpoint: Date): Date = {
-      if (attributeValue.getTime >= upperEndpoint.getTime) {
-        getBinKey(binSize, numBins - 1, lowerEndpoint)
-      } else if (attributeValue.getTime <= lowerEndpoint.getTime) {
-        lowerEndpoint
-      } else {
-        val bucketIndex = (attributeValue.getTime - lowerEndpoint.getTime) / binSize
+      if (attributeValue.getTime >= lowerEndpoint.getTime && attributeValue.getTime < upperEndpoint.getTime) {
+        var bucketIndex = (attributeValue.getTime - lowerEndpoint.getTime) / binSize.getTime
+        if (bucketIndex >= numBins)
+          bucketIndex = numBins - 1
+
         getBinKey(binSize, bucketIndex.toInt, lowerEndpoint)
+      } else {
+        null
       }
     }
 
-    override def getBinKey(binSize: Double, bucketIndex: Int, lowerEndpoint: Date): Date = {
-      new Date(lowerEndpoint.getTime + (binSize * bucketIndex))
+    override def getBinKey(binSize: Date, bucketIndex: Int, lowerEndpoint: Date): Date = {
+      new Date(lowerEndpoint.getTime + (binSize.getTime * bucketIndex))
     }
   }
 
@@ -57,15 +58,17 @@ object BinHelper {
 
     override def getBinIndex(attributeValue: lang.Long,
                              binSize: lang.Long,
+                             numBins: Int,
                              lowerEndpoint: lang.Long,
                              upperEndpoint: lang.Long): lang.Long = {
-      if (attributeValue >= upperEndpoint) {
-        upperEndpoint - binSize
-      } else if (attributeValue <= lowerEndpoint) {
-        lowerEndpoint
-      } else {
-        val bucketIndex = (attributeValue - lowerEndpoint) / binSize
+      if (attributeValue >= lowerEndpoint && attributeValue <= upperEndpoint) {
+        var bucketIndex = (attributeValue - lowerEndpoint) / binSize
+        if (bucketIndex >= numBins)
+          bucketIndex = numBins - 1
+
         getBinKey(binSize, bucketIndex.toInt, lowerEndpoint)
+      } else {
+        null
       }
     }
 
@@ -80,20 +83,22 @@ object BinHelper {
     }
 
     override def getBinIndex(attributeValue: Integer,
-                             binSize: Integer,
+                             binSize: java.lang.Integer,
+                             numBins: Int,
                              lowerEndpoint: Integer,
                              upperEndpoint: Integer): Integer = {
-      if (attributeValue >= upperEndpoint) {
-        upperEndpoint - binSize
-      } else if (attributeValue <= lowerEndpoint) {
-        lowerEndpoint
+      if (attributeValue >= lowerEndpoint && attributeValue <= upperEndpoint) {
+        var bucketIndex = (attributeValue - lowerEndpoint) / binSize
+        if (bucketIndex >= numBins)
+          bucketIndex = numBins - 1
+
+        getBinKey(binSize, bucketIndex, lowerEndpoint)
       } else {
-        val bucketIndex = (attributeValue - lowerEndpoint) / binSize
-        getBinKey(binSize, bucketIndex.toInt, lowerEndpoint)
+        null
       }
     }
 
-    override def getBinKey(binSize: lang.Integer, bucketIndex: Int, lowerEndpoint: lang.Integer): lang.Integer = {
+    override def getBinKey(binSize: java.lang.Integer, bucketIndex: Int, lowerEndpoint: lang.Integer): lang.Integer = {
       lowerEndpoint + (binSize * bucketIndex)
     }
   }
@@ -104,20 +109,22 @@ object BinHelper {
     }
 
     override def getBinIndex(attributeValue: lang.Double,
-                             binSize: lang.Double,
+                             binSize: java.lang.Double,
+                             numBins: Int,
                              lowerEndpoint: lang.Double,
                              upperEndpoint: lang.Double): lang.Double = {
-      if (attributeValue >= upperEndpoint) {
-        upperEndpoint - binSize
-      } else if (attributeValue <= lowerEndpoint) {
-        lowerEndpoint
-      } else {
-        val bucketIndex = (attributeValue - lowerEndpoint) / binSize
+      if (attributeValue >= lowerEndpoint && attributeValue <= upperEndpoint) {
+        var bucketIndex = (attributeValue - lowerEndpoint) / binSize
+        if (bucketIndex >= numBins)
+          bucketIndex = numBins - 1
+
         getBinKey(binSize, bucketIndex.toInt, lowerEndpoint)
+      } else {
+        null
       }
     }
 
-    override def getBinKey(binSize: lang.Double, bucketIndex: Int, lowerEndpoint: lang.Double): lang.Double = {
+    override def getBinKey(binSize: java.lang.Double, bucketIndex: Int, lowerEndpoint: lang.Double): lang.Double = {
       lowerEndpoint + (binSize * bucketIndex)
     }
   }
@@ -128,20 +135,22 @@ object BinHelper {
     }
 
     override def getBinIndex(attributeValue: lang.Float,
-                             binSize: lang.Float,
+                             binSize: java.lang.Float,
+                             numBins: Int,
                              lowerEndpoint: lang.Float,
                              upperEndpoint: lang.Float): lang.Float = {
-      if (attributeValue >= upperEndpoint) {
-        upperEndpoint - binSize
-      } else if (attributeValue <= lowerEndpoint) {
-        lowerEndpoint
-      } else {
-        val bucketIndex = (attributeValue - lowerEndpoint) / binSize
+      if (attributeValue >= lowerEndpoint && attributeValue <= upperEndpoint) {
+        var bucketIndex = (attributeValue - lowerEndpoint) / binSize
+        if (bucketIndex >= numBins)
+          bucketIndex = numBins - 1
+
         getBinKey(binSize, bucketIndex.toInt, lowerEndpoint)
+      } else {
+        null
       }
     }
 
-    override def getBinKey(binSize: lang.Float, bucketIndex: Int, lowerEndpoint: lang.Float): lang.Float = {
+    override def getBinKey(binSize: java.lang.Float, bucketIndex: Int, lowerEndpoint: lang.Float): lang.Float = {
       lowerEndpoint + (binSize * bucketIndex)
     }
   }
@@ -158,7 +167,8 @@ import org.locationtech.geomesa.utils.stats.BinHelper._
  * @param upperEndpoint upper end of histogram
  * @tparam T a comparable type which must have a StatHelperFunctions type class
  */
-case class RangeHistogram[T : BinAble](attrIndex: Int,
+case class RangeHistogram[T : BinAble]
+(attrIndex: Int,
                                        attrType: String,
                                        numBins: Int,
                                        lowerEndpoint: T,
@@ -168,7 +178,7 @@ case class RangeHistogram[T : BinAble](attrIndex: Int,
   val binHelper = implicitly[BinAble[T]]
   val binSize = binHelper.getBinSize(numBins, lowerEndpoint, upperEndpoint)
 
-  for (i <- numBins) {
+  for (i <- 0 until numBins) {
     histogram.put(binHelper.getBinKey(binSize, i, lowerEndpoint), 0)
   }
 
@@ -176,8 +186,10 @@ case class RangeHistogram[T : BinAble](attrIndex: Int,
     val sfval = sf.getAttribute(attrIndex).asInstanceOf[T]
 
     if (sfval != null) {
-      val binIndex = binHelper.getBinIndex(sfval, binSize, lowerEndpoint, upperEndpoint)
-      histogram(binIndex) += 1
+      val binIndex = binHelper.getBinIndex(sfval, binSize, numBins, lowerEndpoint, upperEndpoint)
+      if (binIndex != null) {
+        histogram(binIndex) += 1
+      }
     }
   }
 

@@ -70,8 +70,8 @@ class MinMaxTest extends Specification with StatTestHelper {
 
         features.foreach { stat.observe }
 
-        minMax.min mustEqual 1
-        minMax.max mustEqual 100
+        minMax.min mustEqual 0
+        minMax.max mustEqual 99
 
         "serialize and deserialize" in {
           val packed   = StatSerialization.pack(minMax)
@@ -87,14 +87,14 @@ class MinMaxTest extends Specification with StatTestHelper {
           features2.foreach { stat2.observe }
 
           minMax2.min mustEqual 100
-          minMax2.max mustEqual 200
+          minMax2.max mustEqual 199
 
           stat.add(stat2)
 
-          minMax.min mustEqual 1
-          minMax.max mustEqual 200
+          minMax.min mustEqual 0
+          minMax.max mustEqual 199
           minMax2.min mustEqual 100
-          minMax2.max mustEqual 200
+          minMax2.max mustEqual 199
         }
       }
 
@@ -109,8 +109,8 @@ class MinMaxTest extends Specification with StatTestHelper {
 
         features.foreach { stat.observe }
 
-        minMax.min mustEqual 1L
-        minMax.max mustEqual 100L
+        minMax.min mustEqual 0L
+        minMax.max mustEqual 99L
 
         "serialize and deserialize" in {
           val packed   = StatSerialization.pack(minMax)
@@ -126,14 +126,14 @@ class MinMaxTest extends Specification with StatTestHelper {
           features2.foreach { stat2.observe }
 
           minMax2.min mustEqual 100L
-          minMax2.max mustEqual 200L
+          minMax2.max mustEqual 199L
 
           stat.add(stat2)
 
-          minMax.min mustEqual 1L
-          minMax.max mustEqual 200L
+          minMax.min mustEqual 0L
+          minMax.max mustEqual 199L
           minMax2.min mustEqual 100L
-          minMax2.max mustEqual 200L
+          minMax2.max mustEqual 199L
         }
       }
 
@@ -148,8 +148,8 @@ class MinMaxTest extends Specification with StatTestHelper {
 
         features.foreach { stat.observe }
 
-        minMax.min mustEqual 1
-        minMax.max mustEqual 100
+        minMax.min mustEqual 0
+        minMax.max mustEqual 99
 
         "serialize and deserialize" in {
           val packed   = StatSerialization.pack(minMax)
@@ -165,14 +165,14 @@ class MinMaxTest extends Specification with StatTestHelper {
           features2.foreach { stat2.observe }
 
           minMax2.min mustEqual 100
-          minMax2.max mustEqual 200
+          minMax2.max mustEqual 199
 
           stat.add(stat2)
 
-          minMax.min mustEqual 1
-          minMax.max mustEqual 200
+          minMax.min mustEqual 0
+          minMax.max mustEqual 199
           minMax2.min mustEqual 100
-          minMax2.max mustEqual 200
+          minMax2.max mustEqual 199
         }
       }
 
@@ -187,8 +187,8 @@ class MinMaxTest extends Specification with StatTestHelper {
 
         features.foreach { stat.observe }
 
-        minMax.min mustEqual 1
-        minMax.max mustEqual 100
+        minMax.min mustEqual 0
+        minMax.max mustEqual 99
 
         "serialize and deserialize" in {
           val packed   = StatSerialization.pack(minMax)
@@ -204,14 +204,14 @@ class MinMaxTest extends Specification with StatTestHelper {
           features2.foreach { stat2.observe }
 
           minMax2.min mustEqual 100
-          minMax2.max mustEqual 200
+          minMax2.max mustEqual 199
 
           stat.add(stat2)
 
-          minMax.min mustEqual 1
-          minMax.max mustEqual 200
+          minMax.min mustEqual 0
+          minMax.max mustEqual 199
           minMax2.min mustEqual 100
-          minMax2.max mustEqual 200
+          minMax2.max mustEqual 199
         }
       }
     }

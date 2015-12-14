@@ -158,7 +158,7 @@ object StatSerialization {
     attrType match {
       case _ if attrType == classOf[Date] =>
         val rh = new RangeHistogram[Date](attrIndex, attrTypeString, numBins.toInt,
-          StatHelpers.dateFormat.parseDateTime(lowerEndpoint).toDate, StatHelpers.dateFormat.parseDateTime(upperEndpoint).toDate)
+          StatHelpers.javaDateFormat.parse(lowerEndpoint), StatHelpers.javaDateFormat.parse(upperEndpoint))
         keyValues.foreach {
           case (keyValuePair) =>
             val splitKeyValuePair = keyValuePair.split("->")

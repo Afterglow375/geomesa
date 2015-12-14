@@ -12,13 +12,13 @@ trait StatTestHelper {
   val floatIndex = sft.indexOf("floatAttr")
   val dateIndex = sft.indexOf("dtg")
 
-  val features = (1 to 100).toArray.map {
+  val features = (0 until 100).toArray.map {
     i => SimpleFeatureBuilder.build(sft,
       Array("abc", i, i, i, i, "POINT(-77 38)",
         StatHelpers.dateFormat.parseDateTime(s"2012-01-01T${i%24}:00:00.000Z").toDate).asInstanceOf[Array[AnyRef]], i.toString)
   }
 
-  val features2 = (100 to 200).toArray.map {
+  val features2 = (100 until 200).toArray.map {
     i => SimpleFeatureBuilder.build(sft,
       Array("abc", i, i, i, i, "POINT(-77 38)",
         StatHelpers.dateFormat.parseDateTime(s"2012-01-02T${i%24}:00:00.000Z").toDate).asInstanceOf[Array[AnyRef]], i.toString)

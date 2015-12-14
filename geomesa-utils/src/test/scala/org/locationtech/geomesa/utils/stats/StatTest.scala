@@ -28,7 +28,6 @@ class StatTest extends Specification with StatTestHelper {
     }
 
     "create a sequence of stats" in {
-      val stat11 = Stat(sft, "MinMax(geom)")
       val stat = Stat(sft, "MinMax(intAttr);IteratorStackCounter;EnumeratedHistogram(longAttr);RangeHistogram(doubleAttr,5,1,25)")
       val stats = stat.asInstanceOf[SeqStat].stats
 
@@ -52,12 +51,12 @@ class StatTest extends Specification with StatTestHelper {
 
       rh.attrIndex mustEqual doubleIndex
       rh.attrType mustEqual "java.lang.Double"
-      rh.histogram.size mustEqual 0
+      rh.histogram.size mustEqual 5
 
       features.foreach { stat.observe }
 
-      minMax.min mustEqual 1
-      minMax.max mustEqual 100
+      minMax.min mustEqual 0
+      minMax.max mustEqual 99
 
       isc.count mustEqual 1
 
