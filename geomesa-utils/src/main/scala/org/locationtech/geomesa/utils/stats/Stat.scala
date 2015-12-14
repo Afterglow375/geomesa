@@ -22,6 +22,7 @@ trait Stat {
   /**
    * Compute statistics based upon the given simple feature.
    * This method will be called for every SimpleFeature a query returns.
+   *
    * @param sf
    */
   def observe(sf: SimpleFeature)
@@ -29,14 +30,16 @@ trait Stat {
   /**
    * Meant to be used to combine two Stats of the same subtype.
    * Used in the "reduce" step client-side.
-   * @param other
-   * @return
+   *
+   * @param other the other stat to add (this will always be a stat of the same sub-type unless something horrible happens)
+   * @return the original stat with the other stat's data added
    */
   def add(other: Stat): Stat
 
   /**
    * Serves as serialization needed for storing the computed statistic in a SimpleFeature.
-   * @return
+   *
+   * @return stat serialized as a json string
    */
   def toJson(): String
 }
@@ -58,6 +61,7 @@ object Stat {
 
     /**
      * Obtains the index of the attribute within the SFT
+     *
      * @param attribute attribute name as a string
      * @return attribute index
      */

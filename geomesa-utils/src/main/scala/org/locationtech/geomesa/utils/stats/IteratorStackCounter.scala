@@ -6,11 +6,16 @@
   * http://www.opensource.org/licenses/apache2.0.php.
   *************************************************************************/
 
-
 package org.locationtech.geomesa.utils.stats
 
 import org.opengis.feature.simple.SimpleFeature
 
+/**
+ * The IteratorStackCounter keeps track of the number of Accumulo iterators
+ * that are instantiated as a result of a query
+ *
+ * @param count number of iterators
+ */
 case class IteratorStackCounter(var count: Long = 1) extends Stat {
   override def observe(sf: SimpleFeature): Unit = { }
 

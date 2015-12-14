@@ -13,6 +13,14 @@ import org.opengis.feature.simple.SimpleFeature
 import scala.collection.mutable
 import scala.util.parsing.json.JSONObject
 
+/**
+ * An EnumeratedHistogram is merely a HashMap mapping values to number of occurences
+ * .
+ * @param attrIndex attribute index for the attribute the histogram is being made for
+ * @param attrType class type as a string for serialization purposes
+ * @param frequencyMap HashMap which backs the EnumeratedHistogram
+ * @tparam T some type T (which is restricted by the stat parser upstream of EnumeratedHistogram instantiation)
+ */
 case class EnumeratedHistogram[T](attrIndex: Int,
                                   attrType: String,
                                   frequencyMap: mutable.Map[T, Long] = new mutable.HashMap[T, Long]().withDefaultValue(0)) extends Stat {

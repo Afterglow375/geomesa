@@ -13,8 +13,9 @@ import org.opengis.feature.simple.SimpleFeature
 /**
  * The MinMax stat merely returns the min/max of an attribute's values.
  * Works with dates, integers, longs, doubles, and floats.
+ *
  * @param attrIndex attribute index for the attribute the histogram is being made for
- * @param attrType class type as a string to make serialization easier
+ * @param attrType class type as a string for serialization purposes
  * @param min minimum value
  * @param max maximum value
  * @tparam T the type of the attribute the stat is targeting (needs to be comparable)

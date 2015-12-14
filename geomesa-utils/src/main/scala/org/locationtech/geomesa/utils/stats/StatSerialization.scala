@@ -28,6 +28,13 @@ object StatSerialization {
   val EH_BYTE: Byte         = '2'
   val RH_BYTE: Byte         = '3'
 
+  /**
+   * Fully serializes a stat by formatting the byte array with the "kind" byte
+   *
+   * @param kind byte indicating the type of stat
+   * @param bytes serialized stat
+   * @return fully serialized stat
+   */
   private def serializeStat(kind: Byte, bytes: Array[Byte]): Array[Byte] = {
     val size = ByteBuffer.allocate(4).putInt(bytes.length).array
     Bytes.concat(Array(kind), size, bytes)
@@ -201,9 +208,10 @@ object StatSerialization {
   }
 
   /**
-   * Uses individual stat pack methods to serialize the stat.
+   * Uses individual stat pack methods to serialize the stat
+   *
    * @param stat the given stat to serialize
-   * @return
+   * @return serialized stat
    */
   def pack(stat: Stat): Array[Byte] = {
     stat match {
@@ -216,9 +224,10 @@ object StatSerialization {
   }
 
   /**
-   * Deserializes the stat.
+   * Deserializes the stat
+   *
    * @param bytes the serialized stat
-   * @return
+   * @return deserialized stat
    */
   def unpack(bytes: Array[Byte]): Stat = {
     val returnStats: ArrayBuffer[Stat] = new mutable.ArrayBuffer[Stat]()

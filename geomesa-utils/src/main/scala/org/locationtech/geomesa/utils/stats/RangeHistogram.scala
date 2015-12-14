@@ -16,7 +16,9 @@ import org.opengis.feature.simple.SimpleFeature
 import scala.util.parsing.json.JSONObject
 
 /**
- * This object provides the type classes used by the range histogram
+ * This object provides the type classes used by the RangeHistogram.
+ * BinAble provides methods which help bin a type's range of values into
+ * equal-sized (or close to equal-sized in many cases) smaller ranges.
  */
 object BinHelper {
   trait BinAble[T] {
@@ -165,6 +167,7 @@ import org.locationtech.geomesa.utils.stats.BinHelper._
  * @param numBins number of bins the histogram has
  * @param lowerEndpoint lower end of histogram
  * @param upperEndpoint upper end of histogram
+ * @param histogram the datatype backing the RangeHistogram
  * @tparam T a comparable type which must have a StatHelperFunctions type class
  */
 case class RangeHistogram[T : BinAble](attrIndex: Int,
