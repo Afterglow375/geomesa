@@ -46,7 +46,6 @@ class EnumeratedHistogramTest extends Specification with StatTestHelper {
           val unpacked = StatSerialization.unpack(packed).asInstanceOf[EnumeratedHistogram[Date]]
 
           unpacked mustEqual eh
-          unpacked.frequencyMap mustEqual eh.frequencyMap
         }
 
         "combine two EnumeratedHistograms" in {
@@ -87,7 +86,6 @@ class EnumeratedHistogramTest extends Specification with StatTestHelper {
           val unpacked = StatSerialization.unpack(packed).asInstanceOf[EnumeratedHistogram[java.lang.Integer]]
 
           unpacked mustEqual eh
-          unpacked.frequencyMap mustEqual eh.frequencyMap
         }
 
         "combine two EnumeratedHistograms" in {
@@ -126,7 +124,6 @@ class EnumeratedHistogramTest extends Specification with StatTestHelper {
           val unpacked = StatSerialization.unpack(packed).asInstanceOf[EnumeratedHistogram[java.lang.Long]]
 
           unpacked mustEqual eh
-          unpacked.frequencyMap mustEqual eh.frequencyMap
         }
 
         "combine two EnumeratedHistograms" in {
@@ -165,7 +162,6 @@ class EnumeratedHistogramTest extends Specification with StatTestHelper {
           val unpacked = StatSerialization.unpack(packed).asInstanceOf[EnumeratedHistogram[java.lang.Double]]
 
           unpacked mustEqual eh
-          unpacked.frequencyMap mustEqual eh.frequencyMap
         }
 
         "combine two EnumeratedHistograms" in {
@@ -204,7 +200,6 @@ class EnumeratedHistogramTest extends Specification with StatTestHelper {
           val unpacked = StatSerialization.unpack(packed).asInstanceOf[EnumeratedHistogram[java.lang.Float]]
 
           unpacked mustEqual eh
-          unpacked.frequencyMap mustEqual eh.frequencyMap
         }
 
         "combine two EnumeratedHistograms" in {

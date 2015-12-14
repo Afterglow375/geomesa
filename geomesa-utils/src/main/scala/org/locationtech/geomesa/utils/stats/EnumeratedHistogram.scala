@@ -13,9 +13,9 @@ import org.opengis.feature.simple.SimpleFeature
 import scala.collection.mutable
 import scala.util.parsing.json.JSONObject
 
-case class EnumeratedHistogram[T](attrIndex: Int, attrType: String) extends Stat {
-  val frequencyMap = mutable.HashMap[T, Long]().withDefaultValue(0)
-
+case class EnumeratedHistogram[T](attrIndex: Int,
+                                  attrType: String,
+                                  frequencyMap: mutable.Map[T, Long] = new mutable.HashMap[T, Long]().withDefaultValue(0)) extends Stat {
   override def observe(sf: SimpleFeature): Unit = {
     val sfval = sf.getAttribute(attrIndex)
     if (sfval != null) {

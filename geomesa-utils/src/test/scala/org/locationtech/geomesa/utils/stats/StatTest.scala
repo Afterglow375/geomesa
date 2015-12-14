@@ -28,7 +28,7 @@ class StatTest extends Specification with StatTestHelper {
     }
 
     "create a sequence of stats" in {
-      val stat = Stat(sft, "MinMax(intAttr);IteratorStackCounter;EnumeratedHistogram(longAttr);RangeHistogram(doubleAttr,5,1,25)")
+      val stat = Stat(sft, "MinMax(intAttr);IteratorStackCounter;EnumeratedHistogram(longAttr);RangeHistogram(doubleAttr,20,0,200)")
       val stats = stat.asInstanceOf[SeqStat].stats
 
       stats.size mustEqual 4
@@ -51,7 +51,10 @@ class StatTest extends Specification with StatTestHelper {
 
       rh.attrIndex mustEqual doubleIndex
       rh.attrType mustEqual "java.lang.Double"
-      rh.histogram.size mustEqual 5
+      rh.histogram.size mustEqual 20
+      rh.histogram(0.0) mustEqual 0
+      rh.histogram(50.0) mustEqual 0
+      rh.histogram(100.0) mustEqual 0
 
       features.foreach { stat.observe }
 
@@ -61,12 +64,64 @@ class StatTest extends Specification with StatTestHelper {
       isc.count mustEqual 1
 
       eh.frequencyMap.size mustEqual 100
+      eh.frequencyMap(0L) mustEqual 1
+      eh.frequencyMap(100L) mustEqual 0
 
-      rh.histogram.size mustEqual 5
+      rh.histogram.size mustEqual 20
+      rh.histogram(0.0) mustEqual 10
+      rh.histogram(50.0) mustEqual 10
+      rh.histogram(100.0) mustEqual 0
 
-//      "combine two sequences of stats" in {
-//        success //TODO
-//      }
+      "serialize and deserialize" in {
+        val packed   = StatSerialization.pack(stat)
+        val unpacked = StatSerialization.unpack(packed).asInstanceOf[SeqStat]
+
+        unpacked mustEqual stat.asInstanceOf[SeqStat]
+      }
+
+      "combine two SeqStats" in {
+        val stat2 = Stat(sft, "MinMax(intAttr);IteratorStackCounter;EnumeratedHistogram(longAttr);RangeHistogram(doubleAttr,20,0,200)")
+        val stats2 = stat2.asInstanceOf[SeqStat].stats
+
+        stats2.size mustEqual 4
+
+        val minMax2 = stats2(0).asInstanceOf[MinMax[java.lang.Integer]]
+        val isc2 = stats2(1).asInstanceOf[IteratorStackCounter]
+        val eh2 = stats2(2).asInstanceOf[EnumeratedHistogram[java.lang.Long]]
+        val rh2 = stats2(3).asInstanceOf[RangeHistogram[java.lang.Double]]
+
+        features2.foreach { stat2.observe }
+
+        stat.add(stat2)
+
+        minMax.min mustEqual 0
+        minMax.max mustEqual 199
+
+        isc.count mustEqual 2
+
+        eh.frequencyMap.size mustEqual 200
+        eh.frequencyMap(0L) mustEqual 1
+        eh.frequencyMap(100L) mustEqual 1
+
+        rh.histogram.size mustEqual 20
+        rh.histogram(0.0) mustEqual 10
+        rh.histogram(50.0) mustEqual 10
+        rh.histogram(100.0) mustEqual 10
+
+        minMax2.min mustEqual 100
+        minMax2.max mustEqual 199
+
+        isc2.count mustEqual 1
+
+        eh2.frequencyMap.size mustEqual 100
+        eh2.frequencyMap(0L) mustEqual 0
+        eh2.frequencyMap(100L) mustEqual 1
+
+        rh2.histogram.size mustEqual 20
+        rh2.histogram(0.0) mustEqual 0
+        rh2.histogram(50.0) mustEqual 0
+        rh2.histogram(100.0) mustEqual 10
+      }
     }
   }
 }

@@ -36,7 +36,6 @@ class RangeHistogramTest extends Specification with StatTestHelper {
           val unpacked = StatSerialization.unpack(packed).asInstanceOf[RangeHistogram[Date]]
 
           unpacked mustEqual rh
-          unpacked.histogram mustEqual rh.histogram
         }
 
         "combine two RangeHistograms" in {
@@ -77,7 +76,6 @@ class RangeHistogramTest extends Specification with StatTestHelper {
           val unpacked = StatSerialization.unpack(packed).asInstanceOf[RangeHistogram[java.lang.Integer]]
 
           unpacked mustEqual rh
-          unpacked.histogram mustEqual rh.histogram
         }
 
         "combine two RangeHistograms" in {
@@ -120,7 +118,6 @@ class RangeHistogramTest extends Specification with StatTestHelper {
           val unpacked = StatSerialization.unpack(packed).asInstanceOf[RangeHistogram[java.lang.Long]]
 
           unpacked mustEqual rh
-          unpacked.histogram mustEqual rh.histogram
         }
 
         "combine two RangeHistograms" in {
@@ -166,7 +163,6 @@ class RangeHistogramTest extends Specification with StatTestHelper {
           val unpacked = StatSerialization.unpack(packed).asInstanceOf[RangeHistogram[java.lang.Double]]
 
           unpacked mustEqual rh
-          unpacked.histogram mustEqual rh.histogram
         }
 
         "combine two RangeHistograms" in {
@@ -212,7 +208,6 @@ class RangeHistogramTest extends Specification with StatTestHelper {
           val unpacked = StatSerialization.unpack(packed).asInstanceOf[RangeHistogram[java.lang.Float]]
 
           unpacked mustEqual rh
-          unpacked.histogram mustEqual rh.histogram
         }
 
         "combine two RangeHistograms" in {

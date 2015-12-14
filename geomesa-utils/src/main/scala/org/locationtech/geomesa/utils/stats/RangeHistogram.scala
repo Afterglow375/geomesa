@@ -167,14 +167,12 @@ import org.locationtech.geomesa.utils.stats.BinHelper._
  * @param upperEndpoint upper end of histogram
  * @tparam T a comparable type which must have a StatHelperFunctions type class
  */
-case class RangeHistogram[T : BinAble]
-(attrIndex: Int,
+case class RangeHistogram[T : BinAble](attrIndex: Int,
                                        attrType: String,
                                        numBins: Int,
                                        lowerEndpoint: T,
-                                       upperEndpoint: T) extends Stat {
-  val histogram = new collection.mutable.HashMap[T, Long]()
-
+                                       upperEndpoint: T,
+                                       histogram: collection.mutable.HashMap[T, Long] = new collection.mutable.HashMap[T, Long]()) extends Stat {
   val binHelper = implicitly[BinAble[T]]
   val binSize = binHelper.getBinSize(numBins, lowerEndpoint, upperEndpoint)
 
