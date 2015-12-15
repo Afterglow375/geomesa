@@ -63,7 +63,7 @@ object BinHelper {
                              numBins: Int,
                              lowerEndpoint: lang.Long,
                              upperEndpoint: lang.Long): lang.Long = {
-      if (attributeValue >= lowerEndpoint && attributeValue <= upperEndpoint) {
+      if (attributeValue >= lowerEndpoint && attributeValue < upperEndpoint) {
         var bucketIndex = (attributeValue - lowerEndpoint) / binSize
         if (bucketIndex >= numBins)
           bucketIndex = numBins - 1
@@ -89,7 +89,7 @@ object BinHelper {
                              numBins: Int,
                              lowerEndpoint: Integer,
                              upperEndpoint: Integer): Integer = {
-      if (attributeValue >= lowerEndpoint && attributeValue <= upperEndpoint) {
+      if (attributeValue >= lowerEndpoint && attributeValue < upperEndpoint) {
         var bucketIndex = (attributeValue - lowerEndpoint) / binSize
         if (bucketIndex >= numBins)
           bucketIndex = numBins - 1
@@ -115,7 +115,7 @@ object BinHelper {
                              numBins: Int,
                              lowerEndpoint: lang.Double,
                              upperEndpoint: lang.Double): lang.Double = {
-      if (attributeValue >= lowerEndpoint && attributeValue <= upperEndpoint) {
+      if (attributeValue >= lowerEndpoint && attributeValue < upperEndpoint) {
         var bucketIndex = (attributeValue - lowerEndpoint) / binSize
         if (bucketIndex >= numBins)
           bucketIndex = numBins - 1
@@ -141,7 +141,7 @@ object BinHelper {
                              numBins: Int,
                              lowerEndpoint: lang.Float,
                              upperEndpoint: lang.Float): lang.Float = {
-      if (attributeValue >= lowerEndpoint && attributeValue <= upperEndpoint) {
+      if (attributeValue >= lowerEndpoint && attributeValue < upperEndpoint) {
         var bucketIndex = (attributeValue - lowerEndpoint) / binSize
         if (bucketIndex >= numBins)
           bucketIndex = numBins - 1
@@ -161,7 +161,12 @@ object BinHelper {
 import org.locationtech.geomesa.utils.stats.BinHelper._
 
 /**
- * The range histogram's state is stored in a hashmap, where the keys are the bins and the values are the counts
+ * The range histogram's state is stored in a hashmap, where the keys are the bins and the values are the counts.
+ * A bin is a range of values but is treated as the lower endpoint of the bin to persist in the hashmap.
+ * A value is in a particular bin if it is equal to the bin value or less than the subsequent bin value.
+ *
+ * e.g. a range of 0 to 3 with 3 bins will result in these bins: [0, 1), [1, 2), [2, 3) and the hashmap will contain
+ * keys 0, 1, and 2.
  *
  * @param attrIndex attribute index for the attribute the histogram is being made for
  * @param numBins number of bins the histogram has

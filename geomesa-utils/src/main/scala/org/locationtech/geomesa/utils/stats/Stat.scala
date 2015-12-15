@@ -164,7 +164,7 @@ object Stat {
       parseAll(statsParser, s) match {
         case Success(result, _) => result
         case failure: NoSuccess =>
-          throw new Exception(s"Could not parse $s")
+          throw new Exception(s"Could not parse the stats string: $s")
       }
     }
   }

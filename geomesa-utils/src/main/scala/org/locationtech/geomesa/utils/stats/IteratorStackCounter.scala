@@ -19,7 +19,7 @@ import org.opengis.feature.simple.SimpleFeature
 case class IteratorStackCounter(var count: Long = 1) extends Stat {
   override def observe(sf: SimpleFeature): Unit = { }
 
-  override def toJson(): String = s"""{ "iteratorStackCount": $count }"""
+  override def toJson(): String = s"""{ "count": $count }"""
 
   override def add(other: Stat): Stat = {
     other match {

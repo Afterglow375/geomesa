@@ -27,6 +27,7 @@ import org.specs2.mutable.Specification
 import org.specs2.runner.JUnitRunner
 
 import scala.collection.JavaConversions._
+import scala.util.parsing.json.JSONObject
 
 @RunWith(classOf[JUnitRunner])
 class StatsIteratorTest extends Specification {
@@ -84,6 +85,9 @@ class StatsIteratorTest extends Specification {
     q
   }
 
+  /**
+   * Not testing too much here stat-wise, as most of the stat testing is in geomesa-utils
+   */
   "StatsIterator" should {
     val spec = "id:java.lang.Integer,attr:java.lang.Long,dtg:Date,geom:Geometry:srid=4326"
     val sft = SimpleFeatureTypes.createType("test", spec)
@@ -91,37 +95,37 @@ class StatsIteratorTest extends Specification {
     sft.getUserData.put(Constants.SF_PROPERTY_START_TIME, "dtg")
     val ds = createDataStore(sft, 0)
     val encodedFeatures = (0 until 150).toArray.map{
-      i => Array(i.toString, i*2, new DateTime("2012-01-01T19:00:00", DateTimeZone.UTC).toDate, "POINT(-77 38)")
+      i => Array(i, i*2, new DateTime("2012-01-01T19:00:00", DateTimeZone.UTC).toDate, "POINT(-77 38)")
     }
     val fs = loadFeatures(ds, sft, encodedFeatures)
 
-//    "handle malformed stat strings" in {
-//      "query 1" in {
-//        val q = getQuery("attr BETWEEN 0 AND 300", "")
-//        val feats = fs.getFeatures(q)
-//        success
-//      }
-//      "query 2" in {
-//        val q = getQuery("(attr BETWEEN 0 AND 300)", "abcd")
-//        fs.getFeatures(q) must throwAn[Exception]
-//      }
-//      "query 3" in {
-//        val q = getQuery("(attr BETWEEN 0 AND 300)", "RangeHistogram()")
-//        fs.getFeatures(q) must throwAn[Exception]
-//      }
-//      "query 4" in {
-//        val q = getQuery("(attr BETWEEN 0 AND 300)", "RangeHistogram(foo,10,2012-01-01T00:00:00.000Z,2012-02-01T00:00:00.000Z)")
-//        fs.getFeatures(q) must throwAn[Exception]
-//      }
-//      "query 5" in {
-//        val q = getQuery("(attr BETWEEN 0 AND 300)", "MinMax()")
-//        fs.getFeatures(q) must throwAn[Exception]
-//      }
-//      "query 6" in {
-//        val q = getQuery("(attr BETWEEN 0 AND 300)", "MinMax(abcd)")
-//        fs.getFeatures(q) must throwAn[Exception]
-//      }
-//    }
+    "handle malformed stat strings" in {
+      "query 1" in {
+        val q = getQuery("attr BETWEEN 0 AND 300 AND BBOX(geom, -80, 33, -70, 40)", "")
+        fs.getFeatures(q).features() must throwAn[Exception]
+      }
+      "query 2" in {
+        val q = getQuery("attr BETWEEN 0 AND 300 AND BBOX(geom, -80, 33, -70, 40)", "abcd")
+        fs.getFeatures(q).features() must throwAn[Exception]
+      }
+      "query 3" in {
+        val q = getQuery("attr BETWEEN 0 AND 300 AND BBOX(geom, -80, 33, -70, 40)", "RangeHistogram()")
+        fs.getFeatures(q).features() must throwAn[Exception]
+      }
+      "query 4" in {
+        val q = getQuery("attr BETWEEN 0 AND 300 AND BBOX(geom, -80, 33, -70, 40)",
+          "RangeHistogram(foo,10,2012-01-01T00:00:00.000Z,2012-02-01T00:00:00.000Z)")
+        fs.getFeatures(q).features() must throwAn[Exception]
+      }
+      "query 5" in {
+        val q = getQuery("attr BETWEEN 0 AND 300 AND BBOX(geom, -80, 33, -70, 40)", "MinMax(geom)")
+        fs.getFeatures(q).features() must throwAn[Exception]
+      }
+      "query 6" in {
+        val q = getQuery("attr BETWEEN 0 AND 300 AND BBOX(geom, -80, 33, -70, 40)", "MinMax(abcd)")
+        fs.getFeatures(q).features() must throwAn[Exception]
+      }
+    }
 
     "work with the MinMax stat" in {
       val q = getQuery("attr BETWEEN 0 AND 300 AND BBOX(geom, -80, 33, -70, 40)", "MinMax(attr)")
@@ -130,229 +134,115 @@ class StatsIteratorTest extends Specification {
 
       val minMaxStat = decodeStat(sf.getAttribute(STATS).asInstanceOf[String]).asInstanceOf[MinMax[java.lang.Long]]
       minMaxStat.min mustEqual 0
-      minMaxStat.max mustEqual 300
+      minMaxStat.max mustEqual 298
     }
 
-//    "work with the IteratorCount stat" in {
-//
-//    }
-//
-//    "work with the EnumerationHistogram stat" in {
-//
-//    }
-//
-//    "work with the RangeHistogram stat" in {
-//
-//    }
-//
-//    "work with multiple stats at once" in {
-//
-//    }
+    "work with the IteratorStackCounter stat" in {
+      val q = getQuery("attr BETWEEN 0 AND 300 AND BBOX(geom, -80, 33, -70, 40)", "IteratorStackCounter")
+      val results = fs.getFeatures(q).features().toList
+      val sf = results.head
 
-//    "reduce total features returned - json" in {
-//      val q = getQueryJSON("(attr BETWEEN 0 AND 300) and BBOX(geom, -80, 33, -70, 40)")
+      val isc = decodeStat(sf.getAttribute(STATS).asInstanceOf[String]).asInstanceOf[IteratorStackCounter]
+      isc.count mustEqual 1L
+    }
+
+    "work with the EnumeratedHistogram stat" in {
+      val q = getQuery("attr BETWEEN 0 AND 300 AND BBOX(geom, -80, 33, -70, 40)", "EnumeratedHistogram(id)")
+      val results = fs.getFeatures(q).features().toList
+      val sf = results.head
+
+      val eh = decodeStat(sf.getAttribute(STATS).asInstanceOf[String]).asInstanceOf[EnumeratedHistogram[java.lang.Integer]]
+      eh.frequencyMap.size mustEqual 150
+      eh.frequencyMap(0) mustEqual 1
+      eh.frequencyMap(149) mustEqual 1
+      eh.frequencyMap(150) mustEqual 0
+    }
+
+    "work with the RangeHistogram stat" in {
+      val q = getQuery("attr BETWEEN 0 AND 300 AND BBOX(geom, -80, 33, -70, 40)", "RangeHistogram(id,5,10,15)")
+      val results = fs.getFeatures(q).features().toList
+      val sf = results.head
+
+      val rh = decodeStat(sf.getAttribute(STATS).asInstanceOf[String]).asInstanceOf[RangeHistogram[java.lang.Integer]]
+      rh.histogram.size mustEqual 5
+      rh.histogram(10) mustEqual 1
+      rh.histogram(11) mustEqual 1
+      rh.histogram(12) mustEqual 1
+      rh.histogram(13) mustEqual 1
+      rh.histogram(14) mustEqual 1
+    }
+
+    "work with multiple stats at once" in {
+      val q = getQuery("attr BETWEEN 0 AND 300 AND BBOX(geom, -80, 33, -70, 40)",
+        "MinMax(attr);IteratorStackCounter;EnumeratedHistogram(id);RangeHistogram(id,5,10,15)")
+      val results = fs.getFeatures(q).features().toList
+      val sf = results.head
+
+      val seqStat = decodeStat(sf.getAttribute(STATS).asInstanceOf[String]).asInstanceOf[SeqStat]
+      val stats = seqStat.stats
+      stats.size mustEqual 4
+
+      val minMax = stats(0).asInstanceOf[MinMax[java.lang.Long]]
+      val isc = stats(1).asInstanceOf[IteratorStackCounter]
+      val eh = stats(2).asInstanceOf[EnumeratedHistogram[java.lang.Integer]]
+      val rh = stats(3).asInstanceOf[RangeHistogram[java.lang.Integer]]
+
+      minMax.min mustEqual 0
+      minMax.max mustEqual 298
+
+      isc.count mustEqual 1L
+
+      eh.frequencyMap.size mustEqual 150
+      eh.frequencyMap(0) mustEqual 1
+      eh.frequencyMap(149) mustEqual 1
+      eh.frequencyMap(150) mustEqual 0
+
+      rh.histogram.size mustEqual 5
+      rh.histogram(10) mustEqual 1
+      rh.histogram(11) mustEqual 1
+      rh.histogram(12) mustEqual 1
+      rh.histogram(13) mustEqual 1
+      rh.histogram(14) mustEqual 1
+    }
+
+    "work with the MinMax stat - JSON" in {
+      val q = getQueryJSON("attr BETWEEN 0 AND 300 AND BBOX(geom, -80, 33, -70, 40)", "MinMax(id)")
+      val results = fs.getFeatures(q).features().toList
+      val sf = results.head
+
+      val json = sf.getAttribute(STATS).asInstanceOf[String]
+      json mustEqual """{ "min": 0, "max": 149 }"""
+    }
+
+    "work with the IteratorStackCounter stat - JSON" in {
+      val q = getQueryJSON("attr BETWEEN 0 AND 300 AND BBOX(geom, -80, 33, -70, 40)", "IteratorStackCounter")
+      val results = fs.getFeatures(q).features().toList
+      val sf = results.head
+
+      val json = sf.getAttribute(STATS).asInstanceOf[String]
+      json mustEqual """{ "count": 1 }"""
+    }
+
+    "work with the EnumeratedHistogram stat - JSON" in {
+      val q = getQueryJSON("attr BETWEEN 0 AND 300 AND BBOX(geom, -80, 33, -70, 40)", "EnumeratedHistogram(id)")
+      val results = fs.getFeatures(q).features().toList
+      val sf = results.head
+
+      val json = sf.getAttribute(STATS).asInstanceOf[String]
+      println(json)
+      success
+    }
+
+//    "work with the RangeHistogram stat - JSON" in {
 //
-//      val results = fs.getFeatures(q)
-//      val allFeatures = results.features()
-//      val iter = allFeatures.toList
-//
-//      (iter must not).beNull
-//      iter.length mustEqual 1
 //    }
 //
-//    "retrieve accurate histogram when all data has same attribute value" in {
-//      val q = getQuery("(attr BETWEEN 0 AND 300) and BBOX(geom, -80, 33, -70, 40)")
+//    "work with multiple stats at once - JSON" in {
 //
-//      val results = fs.getFeatures(q)
-//      val iter = results.features().toList
-//      val sf = iter.head
-//      iter must not beNull
-//
-//      val histogramMap = decodeHistogramMap(sf.getAttribute(HISTOGRAM_SERIES).asInstanceOf[String])
-//      val totalCount = histogramMap.map { case (attributeValue, count) => count}.sum
-//
-//      totalCount mustEqual 150
-//      histogramMap.size mustEqual 1
 //    }
 //
-//    "retrieve accurate histogram when all data has same attribute value - json" in {
-//      val q = getQueryJSON("(attr BETWEEN 0 AND 300) and BBOX(geom, -80, 33, -70, 40)")
+//    "handle queries which return nothing" in {
 //
-//      val results = fs.getFeatures(q)
-//      val iter = results.features().toList
-//      val sf = iter.head
-//      iter must not beNull
-//
-//      val histogramMap = jsonToHistogramMap(sf.getAttribute(HISTOGRAM_SERIES).asInstanceOf[String])
-//      val totalCount = histogramMap.map { case (attributeValue, count) => count}.sum
-//
-//      totalCount mustEqual 150
-//      histogramMap.size mustEqual 1
-//    }
-//
-//    "maintain total irrespective of point" in {
-//      val ds = createDataStore(sft, 1)
-//      val encodedFeatures = (0 until 150).toArray.map {
-//        i => Array(i.toString, "1.0", new DateTime("2012-01-01T19:00:00", DateTimeZone.UTC).toDate, s"POINT(-77.$i 38.$i)")
-//      }
-//      val fs = loadFeatures(ds, sft, encodedFeatures)
-//
-//      val q = getQuery("(attr BETWEEN 0 AND 300) and BBOX(geom, -80, 33, -70, 40)")
-//
-//      val results = fs.getFeatures(q)
-//      val sfList = results.features().toList
-//
-//      val sf = sfList.head
-//      val histogramMap = decodeHistogramMap(sf.getAttribute(HISTOGRAM_SERIES).asInstanceOf[String])
-//
-//      val totalCount = histogramMap.map { case (attributeValue, count) => count}.sum
-//
-//      totalCount mustEqual 150
-//      histogramMap.size mustEqual 1
-//    }
-//
-//    "maintain total irrespective of point - json" in {
-//      val ds = createDataStore(sft, 2)
-//      val encodedFeatures = (0 until 150).toArray.map {
-//        i => Array(i.toString, "1.0", new DateTime("2012-01-01T19:00:00", DateTimeZone.UTC).toDate, s"POINT(-77.$i 38.$i)")
-//      }
-//      val fs = loadFeatures(ds, sft, encodedFeatures)
-//
-//      val q = getQueryJSON("(attr BETWEEN 0 AND 300) and BBOX(geom, -80, 33, -70, 40)")
-//
-//      val results = fs.getFeatures(q)
-//      val sfList = results.features().toList
-//
-//      val sf = sfList.head
-//      val histogramMap = jsonToHistogramMap(sf.getAttribute(HISTOGRAM_SERIES).asInstanceOf[String])
-//
-//      val totalCount = histogramMap.map { case (attributeValue, count) => count}.sum
-//
-//      totalCount mustEqual 150
-//      histogramMap.size mustEqual 1
-//    }
-//
-//    "correctly bin off of an attribute's interval" in {
-//      val ds = createDataStore(sft, 3)
-//      val encodedFeatures = (0 until 150).toArray.map {
-//        i => Array(i.toString, i*2, new DateTime(s"2012-01-01T19:00:00", DateTimeZone.UTC).toDate, "POINT(-77 38)")
-//      }
-//      val fs = loadFeatures(ds, sft, encodedFeatures)
-//
-//      val q = getQuery("(attr BETWEEN 0 AND 300) and BBOX(geom, -80, 33, -70, 40)")
-//
-//      val results = fs.getFeatures(q)
-//      val sf = results.features().toList.head
-//      val histogramMap = decodeHistogramMap(sf.getAttribute(HISTOGRAM_SERIES).asInstanceOf[String])
-//
-//      val totalCount = histogramMap.map {
-//        case (attributeValue, count) =>
-//          count mustEqual 5L
-//          count}.sum
-//
-//      totalCount mustEqual 150
-//      histogramMap.size mustEqual 30
-//    }
-//
-//    "correctly bin off of an attributes intervals - json" in {
-//      val ds = createDataStore(sft, 4)
-//      val encodedFeatures = (0 until 150).toArray.map {
-//        i => Array(i.toString, i*2, new DateTime(s"2012-01-01T19:00:00", DateTimeZone.UTC).toDate, "POINT(-77 38)")
-//      }
-//      val fs = loadFeatures(ds, sft, encodedFeatures)
-//
-//      val q = getQueryJSON("(dtg between '2012-01-01T00:00:00.000Z' AND '2012-01-02T00:00:00.000Z') and BBOX(geom, -80, 33, -70, 40)")
-//
-//
-//      val results = fs.getFeatures(q)
-//      val sf = results.features().toList.head
-//      val histogramMap = jsonToHistogramMap(sf.getAttribute(HISTOGRAM_SERIES).asInstanceOf[String])
-//
-//      val totalCount = histogramMap.map {
-//        case (attributeValue, count) =>
-//          count mustEqual 5L
-//          count}.sum
-//
-//      totalCount mustEqual 150
-//      histogramMap.size mustEqual 30
-//    }
-//
-//    "encode decode feature" in {
-//      val histogramMap = new collection.mutable.HashMap[Long, Long]()
-//      histogramMap.put(1L, 2)
-//      histogramMap.put(2L, 8)
-//
-//      val encoded = StatsIterator.encodeHistogramMap(histogramMap)
-//      val decoded = StatsIterator.decodeHistogramMap(encoded)
-//
-//      histogramMap mustEqual decoded
-//      histogramMap.size mustEqual 2
-//      histogramMap.get(1L).get mustEqual 2L
-//      histogramMap.get(2L).get mustEqual 8L
-//    }
-//
-//    "query attribute bounds not in DataStore" in {
-//      val ds = createDataStore(sft, 5)
-//      val encodedFeatures = (0 until 50).toArray.map {
-//        i => Array(i.toString, i*2, new DateTime(s"2012-01-01T00:00:00.000Z", DateTimeZone.UTC).toDate, "POINT(-77 38)")
-//      }
-//      val fs = loadFeatures(ds, sft, encodedFeatures)
-//
-//      val q = getQuery("(attr BETWEEN -20 AND -10) and BBOX(geom, -80, 33, -70, 40)")
-//
-//      val results = fs.getFeatures(q)
-//      val sfList = results.features().toList
-//      sfList.length mustEqual 0
-//    }
-//
-//    "query attribute bounds partially in DataStore" in {
-//      val ds = createDataStore(sft, 5)
-//      val encodedFeatures = (0 until 150).toArray.map {
-//        i => Array(i.toString, i*2, new DateTime(s"2012-01-01T00:00:00.000Z", DateTimeZone.UTC).toDate, "POINT(-77 38)")
-//      }
-//      val fs = loadFeatures(ds, sft, encodedFeatures)
-//
-//      val q = getQuery("(attr BETWEEN 0 AND 150) and BBOX(geom, -80, 33, -70, 40)")
-//
-//      val results = fs.getFeatures(q)
-//      val sf = results.features().toList.head
-//      val histogramMap = decodeHistogramMap(sf.getAttribute(HISTOGRAM_SERIES).asInstanceOf[String])
-//
-//      val totalCount = histogramMap.map {
-//        case (attributeValue, count) =>
-//          if (attributeValue == 150) {
-//            count mustEqual 1L
-//          } else {
-//            count mustEqual 5L
-//          }
-//          count}.sum
-//
-//      totalCount mustEqual 76
-//      histogramMap.size mustEqual 16
-//    }
-//
-//    "nothing to query over" in {
-//      val ds = createDataStore(sft, 6)
-//      val encodedFeatures = new Array[Array[_]](0)
-//      val fs = loadFeatures(ds, sft, encodedFeatures)
-//
-//      val q = getQuery("(attr BETWEEN 0 AND 300) and BBOX(geom, -80, 33, -70, 40)")
-//
-//      val results = fs.getFeatures(q)
-//      val sfList = results.features().toList
-//      sfList.length mustEqual 0
-//    }
-//
-//    "nothing to query over - json" in {
-//      val ds = createDataStore(sft, 7)
-//      val encodedFeatures = new Array[Array[_]](0)
-//      val fs = loadFeatures(ds, sft, encodedFeatures)
-//
-//      val q = getQueryJSON("(attr BETWEEN 0 AND 300) and BBOX(geom, -80, 33, -70, 40)")
-//
-//      val results = fs.getFeatures(q)
-//      val sfList = results.features().toList
-//      sfList.length mustEqual 0
 //    }
   }
 }

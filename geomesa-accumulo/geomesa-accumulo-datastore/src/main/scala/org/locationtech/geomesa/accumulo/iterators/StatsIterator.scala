@@ -28,6 +28,7 @@ import org.opengis.feature.simple.SimpleFeatureType
 
 /**
  * Reads simple features and observe them with a Stat server-side
+ *
  * @param other
  * @param env
  */
@@ -68,6 +69,7 @@ object StatsIterator extends Logging {
   /**
    * Adds key-value pairs consisting of the statString and featureType to the cfg client-side
    * The config is then read server-side to set up the iterator
+   *
    * @param cfg iterator config settings
    * @param statString stat query hint string (e.g. "MinMax(foo)")
    */
@@ -109,9 +111,10 @@ object StatsIterator extends Logging {
 
   /**
    * Reduces computed simple features which contain stat information into one on the client
-   * @param features
-   * @param query
-   * @return
+   *
+   * @param features iterator of features received per tablet server from query
+   * @param query query that the stats are being run against
+   * @return aggregated iterator of features
    */
   def reduceFeatures(features: SFIter, query: Query): SFIter = {
     val encode = query.getHints.containsKey(RETURN_ENCODED)

@@ -12,12 +12,13 @@ import org.opengis.feature.simple.SimpleFeature
 
 /**
  * If the stats parser receives a string with multiple stats, a SeqStat will be used.
+ *
  * @param stats a Sequence of individual Stat objects
  */
 case class SeqStat(stats: Seq[Stat]) extends Stat {
   override def observe(sf: SimpleFeature): Unit = stats.foreach(_.observe(sf))
 
-  override def toJson(): String = "[ " + stats.map(_.toJson()).mkString(",") + " ]"
+  override def toJson(): String = "[ " + stats.map(_.toJson()).mkString(", ") + " ]"
 
   override def add(other: Stat): Stat = {
     other match {

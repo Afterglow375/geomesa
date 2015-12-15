@@ -129,18 +129,18 @@ class RangeHistogramTest extends Specification with StatTestHelper {
           rh2.histogram.size mustEqual 7
           rh2.histogram(lowerEndpoint) mustEqual 0L
           rh2.histogram(midpoint) mustEqual 0L
-          rh2.histogram(upperEndpoint) mustEqual 9L
+          rh2.histogram(upperEndpoint) mustEqual 8L
 
           stat.add(stat2)
 
           rh.histogram.size mustEqual 7
           rh.histogram(lowerEndpoint) mustEqual 2L
           rh.histogram(midpoint) mustEqual 2L
-          rh.histogram(upperEndpoint) mustEqual 9L
+          rh.histogram(upperEndpoint) mustEqual 8L
           rh2.histogram.size mustEqual 7
           rh2.histogram(lowerEndpoint) mustEqual 0L
           rh2.histogram(midpoint) mustEqual 0L
-          rh2.histogram(upperEndpoint) mustEqual 9L
+          rh2.histogram(upperEndpoint) mustEqual 8L
         }
       }
 
@@ -174,18 +174,18 @@ class RangeHistogramTest extends Specification with StatTestHelper {
           rh2.histogram.size mustEqual 7
           rh2.histogram(lowerEndpoint) mustEqual 0
           rh2.histogram(midpoint) mustEqual 2
-          rh2.histogram(upperEndpoint) mustEqual 3
+          rh2.histogram(upperEndpoint) mustEqual 2
 
           stat.add(stat2)
 
           rh.histogram.size mustEqual 7
           rh.histogram(lowerEndpoint) mustEqual 3
           rh.histogram(midpoint) mustEqual 3
-          rh.histogram(upperEndpoint) mustEqual 3
+          rh.histogram(upperEndpoint) mustEqual 2
           rh2.histogram.size mustEqual 7
           rh2.histogram(lowerEndpoint) mustEqual 0
           rh2.histogram(midpoint) mustEqual 2
-          rh2.histogram(upperEndpoint) mustEqual 3
+          rh2.histogram(upperEndpoint) mustEqual 2
         }
       }
 
@@ -219,18 +219,18 @@ class RangeHistogramTest extends Specification with StatTestHelper {
           rh2.histogram.size mustEqual 7
           rh2.histogram(lowerEndpoint) mustEqual 0
           rh2.histogram(midpoint) mustEqual 2
-          rh2.histogram(upperEndpoint) mustEqual 3
+          rh2.histogram(upperEndpoint) mustEqual 2
 
           stat.add(stat2)
 
           rh.histogram.size mustEqual 7
           rh.histogram(lowerEndpoint) mustEqual 3
           rh.histogram(midpoint) mustEqual 3
-          rh.histogram(upperEndpoint) mustEqual 3
+          rh.histogram(upperEndpoint) mustEqual 2
           rh2.histogram.size mustEqual 7
           rh2.histogram(lowerEndpoint) mustEqual 0
           rh2.histogram(midpoint) mustEqual 2
-          rh2.histogram(upperEndpoint) mustEqual 3
+          rh2.histogram(upperEndpoint) mustEqual 2
         }
       }
     }
