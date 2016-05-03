@@ -143,10 +143,18 @@ object SimpleFeatureTypes {
     renamed
   }
 
-  def encodeType(sft: SimpleFeatureType, includeUserData: Boolean = false): String = {
-    val suffix = if (!includeUserData || sft.getUserData.isEmpty) { "" } else {
+  def encodeType(sft: SimpleFeatureType): String = {
+    import org.locationtech.geomesa.utils.geotools.RichSimpleFeatureType.RichSimpleFeatureType
+
+    val suffix = if (sft.isGeomesaUserData && !sft.getUserData.isEmpty) {
+      sft.getUserData.entrySet.filter(e => e.getKey.asInstanceOf[String].startsWith("geomesa"))
+        .map(e => s"${e.getKey}='${e.getValue}'").mkString(";", ",", "")
+    }
+    else if (sft.isAllUserData && !sft.getUserData.isEmpty) {
       sft.getUserData.entrySet.map(e => s"${e.getKey}='${e.getValue}'").mkString(";", ",", "")
     }
+    else { "" }
+
     sft.getAttributeDescriptors.map(encodeDescriptor(sft, _)).mkString("", ",", suffix)
   }
 
@@ -642,7 +650,7 @@ object SimpleFeatureTypes {
     private val EQ = "="
 
     def optValue = quotedString | nonQuotedString
-    def fOptKey = "[a-zA-Z0-9\\.]+".r
+    def fOptKey = "[a-zA-Z0-9\\.]*".r
     def fOptKeyValue =  (fOptKey <~ EQ) ~ optValue ^^ {  x => x._1 -> x._2 }
 
     def fOptList = repsep(fOptKeyValue, ",") ^^ { case optPairs =>
