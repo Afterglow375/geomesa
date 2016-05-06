@@ -225,7 +225,7 @@ class SimpleFeatureTypesTest extends Specification {
     }
 
     "allow user data with a unicode character" >> {
-      val spec = "POINT:String,LINESTRING:String,POLYGON:String,attr2:String:index=join,*geom:Geometry:srid=4326,dtg:Date,dtg_end_time:Date;geomesa.index.dtg='dtg',geomesa.table.sharing.prefix='\u0001',geomesa.mixed.geometries='true',table.indexes.enabled='',geomesa.table.sharing='true',geomesa.all.user.data='true',geomes.version='8'"
+      val spec = "POINT:String,LINESTRING:String,POLYGON:String,attr2:String:index=join,*geom:Geometry:srid=4326,dtg:Date,dtg_end_time:Date;geomesa.index.dtg='dtg',geomesa.table.sharing.prefix='\\u0001',geomesa.mixed.geometries='true',table.indexes.enabled='',geomesa.table.sharing='true',geomesa.all.user.data='true',geomes.version='8'"
       val sft = SimpleFeatureTypes.createType("foobar", spec)
       sft.getUserData.toList must containAllOf(Seq("geomesa.mixed.geometries" -> "true", "geomesa.table.sharing" -> "true"))
     }

@@ -12,6 +12,7 @@ import java.util.{Date, Locale, UUID}
 
 import com.typesafe.config.{Config, ConfigFactory}
 import com.vividsolutions.jts.geom._
+import org.apache.commons.lang.StringEscapeUtils
 import org.geotools.feature.AttributeTypeBuilder
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder
 import org.locationtech.geomesa.utils.geotools.SimpleFeatureTypes.SpecParser.{ListAttributeType, MapAttributeType, SimpleAttributeType}
@@ -148,10 +149,11 @@ object SimpleFeatureTypes {
 
     val suffix = if (sft.isGeomesaUserData && !sft.getUserData.isEmpty) {
       sft.getUserData.entrySet.filter(e => e.getKey.asInstanceOf[String].startsWith("geomesa"))
-        .map(e => s"${e.getKey}='${e.getValue}'").mkString(";", ",", "")
+        .map(e => s"${e.getKey}='${StringEscapeUtils.escapeJava(e.getValue.toString)}'").mkString(";", ",", "")
     }
     else if (sft.isAllUserData && !sft.getUserData.isEmpty) {
-      sft.getUserData.entrySet.map(e => s"${e.getKey}='${e.getValue}'").mkString(";", ",", "")
+      sft.getUserData.entrySet.map(e => s"${e.getKey}='${StringEscapeUtils.escapeJava(e.getValue.toString)}'")
+        .mkString(";", ",", "")
     }
     else { "" }
 
