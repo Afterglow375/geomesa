@@ -650,7 +650,7 @@ object SimpleFeatureTypes {
     private val EQ = "="
 
     def optValue = quotedString | nonQuotedString
-    def fOptKey = "[a-zA-Z0-9\\.]*".r
+    def fOptKey = "[a-zA-Z0-9\\.]+".r
     def fOptKeyValue =  (fOptKey <~ EQ) ~ optValue ^^ {  x => x._1 -> x._2 }
 
     def fOptList = repsep(fOptKeyValue, ",") ^^ { case optPairs =>

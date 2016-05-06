@@ -213,9 +213,21 @@ class SimpleFeatureTypesTest extends Specification {
     }
 
     "allow arbitrary feature options in user data" >> {
-      val spec = "ame:String,dtg:Date,*geom:Point:srid=4326;a=b,c=d,x=',,,',z=23562356"
+      val spec = "name:String,dtg:Date,*geom:Point:srid=4326;a=b,c=d,x=',,,',z=23562356"
       val sft = SimpleFeatureTypes.createType("foobar", spec)
       sft.getUserData.toList must containAllOf(Seq("a" -> "b", "c" -> "d", "x" -> ",,,", "z" -> "23562356"))
+    }
+
+    "allow user data with null values" >> {
+      val spec = "name:String,dtg:Date,*geom:Point:srid=4326;a='',c=d,x=',,,',z=23562356"
+      val sft = SimpleFeatureTypes.createType("foobar", spec)
+      sft.getUserData.toList must containAllOf(Seq("a" -> "", "c" -> "d", "x" -> ",,,", "z" -> "23562356"))
+    }
+
+    "allow user data with a unicode character" >> {
+      val spec = "POINT:String,LINESTRING:String,POLYGON:String,attr2:String:index=join,*geom:Geometry:srid=4326,dtg:Date,dtg_end_time:Date;geomesa.index.dtg='dtg',geomesa.table.sharing.prefix='\u0001',geomesa.mixed.geometries='true',table.indexes.enabled='',geomesa.table.sharing='true',geomesa.all.user.data='true',geomes.version='8'"
+      val sft = SimpleFeatureTypes.createType("foobar", spec)
+      sft.getUserData.toList must containAllOf(Seq("geomesa.mixed.geometries" -> "true", "geomesa.table.sharing" -> "true"))
     }
 
     "allow specification of ST index entry values" >> {
