@@ -42,6 +42,22 @@ class SimpleFeatureTypesTest extends Specification {
       "encode an sft properly" >> {
         SimpleFeatureTypes.encodeType(sft) must be equalTo s"id:Integer,dtg:Date,*geom:Point:srid=4326"
       }
+      "encode an sft properly with user data without the right hint" >> {
+        sft.getUserData.put("hello", "goodbye")
+        sft.getUserData.put("geomesa.table.sharing", "true")
+        SimpleFeatureTypes.encodeType(sft) must be equalTo s"id:Integer,dtg:Date,*geom:Point:srid=4326"
+      }
+      "encode an sft properly with geomesa user data" >> {
+        sft.getUserData.put("geomesa.user.data", "true")
+        SimpleFeatureTypes.encodeType(sft) must be equalTo "id:Integer,dtg:Date,*geom:Point:srid=4326;" +
+          "geomesa.index.dtg='dtg',geomesa.user.data='true',geomesa.table.sharing='true'"
+      }
+      "encode an sft properly with all user data" >> {
+        sft.getUserData.remove("geomesa.user.data")
+        sft.getUserData.put("geomesa.all.user.data", "true")
+        SimpleFeatureTypes.encodeType(sft) must be equalTo "id:Integer,dtg:Date,*geom:Point:srid=4326;" +
+          "geomesa.index.dtg='dtg',hello='goodbye',geomesa.table.sharing='true',geomesa.all.user.data='true'"
+      }
     }
 
     "handle namespaces" >> {

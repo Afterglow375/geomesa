@@ -45,6 +45,19 @@ class DescribeCommand(parent: JCommander) extends CommandWithCatalog(parent) wit
 
         println(sb.toString())
       }
+
+      val userData = sft.getUserData
+      if (!userData.isEmpty) {
+        println("\nUser data:")
+        userData.foreach { case (key, value) =>
+          sb.clear()
+          sb.append(key)
+          sb.append(": ")
+          sb.append(value)
+          println(sb.toString())
+        }
+      }
+
     } catch {
       case npe: NullPointerException =>
         logger.error(s"Error: feature '${params.featureName}' not found. Check arguments...", npe)

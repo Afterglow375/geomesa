@@ -44,6 +44,18 @@ class DescribeCommand(parent: JCommander) extends CommandWithKDS(parent) with La
         println(sb.toString())
       }
 
+      val userData = sft.getUserData
+      if (!userData.isEmpty) {
+        println("\nUser data:")
+        userData.foreach { case (key, value) =>
+          sb.clear()
+          sb.append(key)
+          sb.append(": ")
+          sb.append(value)
+          println(sb.toString())
+        }
+      }
+
       val topicName = zkClient.readData[String](ds.asInstanceOf[KafkaDataStore].getTopicPath(params.featureName))
       val topicMetadata = AdminUtils.fetchTopicMetadataFromZk(topicName, zkClient)
 
