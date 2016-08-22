@@ -1,0 +1,61 @@
+/***********************************************************************
+* Copyright (c) 2013-2016 Commonwealth Computer Research, Inc.
+* All rights reserved. This program and the accompanying materials
+* are made available under the terms of the Apache License, Version 2.0
+* which accompanies this distribution and is available at
+* http://www.opensource.org/licenses/apache2.0.php.
+*************************************************************************/
+
+package org.locationtech.geomesa.tools.accumulo.commands
+
+import com.beust.jcommander.{Parameter, JCommander, ParametersDelegate}
+import com.typesafe.scalalogging.LazyLogging
+import org.locationtech.geomesa.jobs.index.AttributeIndexJob
+import org.locationtech.geomesa.tools.accumulo.GeoMesaConnectionParams
+import org.locationtech.geomesa.tools.accumulo.commands.AddIndexCommand.AddIndexParameters
+import org.locationtech.geomesa.tools.common.{AttributesParam, FeatureTypeNameParam}
+
+import scala.util.control.NonFatal
+
+class AddIndexCommand(parent: JCommander) extends CommandWithCatalog(parent) with LazyLogging {
+  override val command = "addindex"
+  override val params = new AddIndexParameters
+
+  override def execute() = {
+    try {
+      val attributeIndexJobParams = Array(
+        "--geomesa.input.user", params.user,
+        "--geomesa.input.password", params.password,
+        "--geomesa.input.instanceId", params.instance,
+        "--geomesa.input.zookeepers", params.zookeepers,
+        "--geomesa.input.tableName", params.catalog,
+        "--geomesa.input.feature", params.featureName,
+        "--geomesa.index.attributes", params.attributes,
+        "--geomesa.index.coverage", params.indexType
+      )
+
+      AttributeIndexJob.main(attributeIndexJobParams)
+
+    } catch {
+      case npe: NullPointerException =>
+        logger.error(s"Error: feature '${params.featureName}' not found. Check arguments...", npe)
+      case e: Exception =>
+        logger.error(s"Error describing feature '${params.featureName}': " + e.getMessage, e)
+      case NonFatal(e) =>
+        logger.warn(s"Non fatal error encountered describing feature '${params.featureName}': ", e)
+    } finally {
+      ds.dispose()
+    }
+  }
+}
+
+object AddIndexCommand {
+  @ParametersDelegate
+  class AddIndexParameters extends GeoMesaConnectionParams
+    with FeatureTypeNameParam with AttributesParam {
+
+    @Parameter(names = Array("-it", "--index-type"),
+      description = "Type of index (join or full)", required = true)
+    var indexType: String = null
+  }
+}
