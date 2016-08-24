@@ -8,7 +8,7 @@
 
 package org.locationtech.geomesa.tools.accumulo.commands
 
-import com.beust.jcommander.{Parameter, JCommander, ParametersDelegate}
+import com.beust.jcommander.{JCommander, Parameter, Parameters}
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.hadoop.util.ToolRunner
 import org.locationtech.geomesa.jobs.index.AttributeIndexJob
@@ -35,14 +35,14 @@ class AddIndexCommand(parent: JCommander) extends CommandWithCatalog(parent) wit
         "--geomesa.index.coverage" -> params.coverage
       ).filter(_._2 != null).flatMap(e => List(e._1, e._2)).toArray
 
-      logger.info(s"Running map reduce index job for attributes: ${params.attributes} with coverage: ${params.coverage}")
+      logger.info(s"Running map reduce index job for attributes: ${params.attributes} with coverage: ${params.coverage}...")
 
       val result = ToolRunner.run(new AttributeIndexJob(), attributeIndexJobParams)
 
       if (result == 0) {
         logger.info("Add attribute index command finished successfully.")
       } else {
-        logger.error("Error encountered running attribute index command. Check hadoop logs for more information.")
+        logger.error("Error encountered running attribute index command. Check hadoop's job history logs for more information.")
       }
 
     } catch {
@@ -59,11 +59,11 @@ class AddIndexCommand(parent: JCommander) extends CommandWithCatalog(parent) wit
 }
 
 object AddIndexCommand {
-  @ParametersDelegate
+  @Parameters(commandDescription = "Run a Hadoop map reduce job to add an index for attributes")
   class AddIndexParameters extends GeoMesaConnectionParams
     with FeatureTypeNameParam with AttributesParam {
 
-    @Parameter(names = Array("-it", "--index-type"),
+    @Parameter(names = Array("-co", "--coverage"),
       description = "Type of index (join or full)", required = true)
     var coverage: String = null
   }
