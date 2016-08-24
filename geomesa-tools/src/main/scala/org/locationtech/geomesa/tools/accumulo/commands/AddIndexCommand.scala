@@ -10,6 +10,7 @@ package org.locationtech.geomesa.tools.accumulo.commands
 
 import com.beust.jcommander.{Parameter, JCommander, ParametersDelegate}
 import com.typesafe.scalalogging.LazyLogging
+import org.apache.hadoop.util.ToolRunner
 import org.locationtech.geomesa.jobs.index.AttributeIndexJob
 import org.locationtech.geomesa.tools.accumulo.GeoMesaConnectionParams
 import org.locationtech.geomesa.tools.accumulo.commands.AddIndexCommand.AddIndexParameters
@@ -23,18 +24,26 @@ class AddIndexCommand(parent: JCommander) extends CommandWithCatalog(parent) wit
 
   override def execute() = {
     try {
-      val attributeIndexJobParams = Array(
-        "--geomesa.input.user", params.user,
-        "--geomesa.input.password", params.password,
-        "--geomesa.input.instanceId", params.instance,
-        "--geomesa.input.zookeepers", params.zookeepers,
-        "--geomesa.input.tableName", params.catalog,
-        "--geomesa.input.feature", params.featureName,
-        "--geomesa.index.attributes", params.attributes,
-        "--geomesa.index.coverage", params.indexType
-      )
+      val attributeIndexJobParams = Map(
+        "--geomesa.input.user" -> params.user,
+        "--geomesa.input.password" -> params.password,
+        "--geomesa.input.instanceId" -> params.instance,
+        "--geomesa.input.zookeepers" -> params.zookeepers,
+        "--geomesa.input.tableName" -> params.catalog,
+        "--geomesa.input.feature" -> params.featureName,
+        "--geomesa.index.attributes" -> params.attributes,
+        "--geomesa.index.coverage" -> params.coverage
+      ).filter(_._2 != null).flatMap(e => List(e._1, e._2)).toArray
 
-      AttributeIndexJob.main(attributeIndexJobParams)
+      logger.info(s"Running map reduce index job for attributes: ${params.attributes} with coverage: ${params.coverage}")
+
+      val result = ToolRunner.run(new AttributeIndexJob(), attributeIndexJobParams)
+
+      if (result == 0) {
+        logger.info("Add attribute index command finished successfully.")
+      } else {
+        logger.error("Error encountered running attribute index command. Check hadoop logs for more information.")
+      }
 
     } catch {
       case npe: NullPointerException =>
@@ -56,6 +65,6 @@ object AddIndexCommand {
 
     @Parameter(names = Array("-it", "--index-type"),
       description = "Type of index (join or full)", required = true)
-    var indexType: String = null
+    var coverage: String = null
   }
 }
